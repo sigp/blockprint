@@ -15,3 +15,9 @@ def feat_num_pairwise_ordered(block_reward):
     pairwise_comparisons = [per_attestation_totals[i] >= per_attestation_totals[i + 1]
                             for i in range(len(per_attestation_totals) - 1)]
     return sum(pairwise_comparisons)
+
+def safe_div(x, y):
+    if y == 0.0:
+        return 0.0
+    else:
+        return x / y

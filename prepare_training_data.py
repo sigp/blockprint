@@ -68,6 +68,7 @@ def main():
     proc_data_dir = sys.argv[2]
 
     for input_file in os.listdir(raw_data_dir):
+        print(f"processing {input_file}")
         with open(os.path.join(raw_data_dir, input_file), "r") as f:
             rewards = json.load(f)
 

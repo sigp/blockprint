@@ -3,11 +3,13 @@ import falcon
 
 from knn_classifier import init_classifier, classify
 
-DATA_DIR = "./training_smol_proc"
+DATA_DIR = "./training_data_proc"
 
 class Classifier:
     def __init__(self, datadir):
+        print("Initialising classifier, this could take a moment...")
         classifier, score = init_classifier(datadir)
+        print(f"Start-up complete, classifier score is {score}")
         self.classifier = classifier
         self.score = score
 

@@ -50,7 +50,7 @@ def store_block_rewards(block_rewards, client, proc_data_dir):
         json.dump(block_rewards, f)
 
 def download_block_reward_batches(start_slot, end_slot, output_dir, beacon_node=BEACON_NODE, batch_size=2048):
-    assert start_slot % 2048 == 1
+    assert start_slot % 2048 == 1, "batch start should be 1 mod 2048 for efficiency"
     for batch_start in range(start_slot, end_slot, batch_size):
         batch_end = min(batch_start + batch_size - 1, end_slot)
 
@@ -68,8 +68,9 @@ def download_block_reward_batches(start_slot, end_slot, output_dir, beacon_node=
 def main():
     start_slot = int(sys.argv[1])
     end_slot = int(sys.argv[2])
+    output_dir = sys.argv[3]
 
-    download_block_reward_batches(start_slot, end_slot, "training_data_raw")
+    download_block_reward_batches(start_slot, end_slot, output_dir)
 
 if __name__ == "__main__":
     main()

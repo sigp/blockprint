@@ -16,14 +16,14 @@ K = 5
 WEIGHTS = "distance"
 
 MIN_GUESS_THRESHOLD = 0.20
-CONFIDENCE_THRESHOLD = 0.75
+CONFIDENCE_THRESHOLD = 0.95
 
 def into_feature_row(block_reward):
     num_attestations = feat_num_attestations(block_reward)
     num_redundant = feat_num_redundant(block_reward)
     num_ordered = feat_num_pairwise_ordered(block_reward)
-    ordered_percent = (num_ordered + 1) / num_attestations
-    redundant_percent = num_redundant / num_attestations
+    ordered_percent = safe_div(num_ordered + 1, num_attestations)
+    redundant_percent = safe_div(num_redundant, num_attestations)
 
     return [redundant_percent, ordered_percent]
 
@@ -33,6 +33,9 @@ def init_classifier(data_dir):
 
     for client in CLIENTS:
         client_dir = os.path.join(data_dir, client)
+
+        if not os.path.exists(client_dir):
+            raise Exception(f"no training data provided for {client}")
 
         for reward_file in os.listdir(client_dir):
             with open(os.path.join(client_dir, reward_file), "r") as f:
@@ -80,27 +83,34 @@ def classify(classifier, block_reward):
 
 def main():
     data_dir = sys.argv[1]
+    classify_dir = sys.argv[2]
 
     classifier, score = init_classifier(data_dir)
 
     print(f"classifier score: {score}")
 
-    input_file = sys.argv[2]
-    with open(input_file, "r") as f:
-        block_rewards = json.load(f)
-
     frequency_map = {}
+    total_blocks = 0
 
-    for block_reward in block_rewards:
-        _, multilabel, prob_by_client = classify(classifier, block_reward)
+    for input_file in os.listdir(classify_dir):
+        print(f"classifying rewards from file {input_file}")
+        with open(os.path.join(classify_dir, input_file), "r") as f:
+            block_rewards = json.load(f)
 
-        if multilabel not in frequency_map:
-            frequency_map[multilabel] = 0
+        for block_reward in block_rewards:
+            _, multilabel, prob_by_client = classify(classifier, block_reward)
 
-        frequency_map[multilabel] += 1
+            if multilabel not in frequency_map:
+                frequency_map[multilabel] = 0
+
+            frequency_map[multilabel] += 1
+
+        total_blocks += len(block_rewards)
+
+    print(f"total blocks processed: {total_blocks}")
 
     for multilabel, num_blocks in sorted(frequency_map.items()):
-        percentage = round(num_blocks / len(block_rewards), 3)
+        percentage = round(num_blocks / total_blocks, 4)
         print(f"{multilabel},{percentage}")
 
 if __name__ == "__main__":
