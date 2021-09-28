@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import json
 import requests
 
@@ -41,12 +42,34 @@ def download_block(block_root, beacon_node):
     res.raise_for_status()
     return res.json()
 
-def main():
-    input_file = sys.argv[1]
-    with open(input_file, "r") as f:
-        rewards = json.load(f)
+def store_block_rewards(block_rewards, client, proc_data_dir):
+    block_root = block_rewards["block_root"]
+    client_dir = os.path.join(proc_data_dir, client)
+    os.makedirs(client_dir, exist_ok=True)
+    with open(os.path.join(client_dir, f"{block_root}.json"), "w") as f:
+        json.dump(block_rewards, f)
 
-    load_or_download_blocks(rewards)
+def download_block_reward_batches(start_slot, end_slot, output_dir, beacon_node=BEACON_NODE, batch_size=2048):
+    assert start_slot % 2048 == 1
+    for batch_start in range(start_slot, end_slot, batch_size):
+        batch_end = min(batch_start + batch_size - 1, end_slot)
+
+        print(f"downloading batch from slot {batch_start} to {batch_end}")
+
+        url = f"{beacon_node}/lighthouse/block_rewards?start_slot={batch_start}&end_slot={batch_end}"
+        res = requests.get(url)
+        res.raise_for_status()
+
+        os.makedirs(output_dir, exist_ok=True)
+        filename = f"slot_{batch_start}_to_{batch_end}.json"
+        with open(os.path.join(output_dir, filename), "w") as f:
+            json.dump(res.json(), f)
+
+def main():
+    start_slot = int(sys.argv[1])
+    end_slot = int(sys.argv[2])
+
+    download_block_reward_batches(start_slot, end_slot, "training_data_raw")
 
 if __name__ == "__main__":
     main()

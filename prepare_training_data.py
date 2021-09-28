@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
+import os
 import re
 import sys
 import json
-from load_blocks import load_or_download_blocks
+from load_blocks import load_or_download_blocks, store_block_rewards
 
-CLIENTS = ["Lighthouse", "Teku", "Nimbus", "Prysm"]
+# In lexicographic order, as that's what SciKit uses internally
+CLIENTS = ['Lighthouse', 'Nimbus', 'Prysm', 'Teku']
 
 REGEX_PATTERNS = {
     "Lighthouse": [
@@ -62,16 +64,20 @@ def classify_rewards_and_blocks_by_graffiti(rewards, blocks):
     return result
 
 def main():
-    input_file = sys.argv[1]
-    with open(input_file, "r") as f:
-        rewards = json.load(f)
+    raw_data_dir = sys.argv[1]
+    proc_data_dir = sys.argv[2]
 
-    blocks = load_or_download_blocks(rewards)
+    for input_file in os.listdir(raw_data_dir):
+        with open(os.path.join(raw_data_dir, input_file), "r") as f:
+            rewards = json.load(f)
 
-    res = classify_rewards_and_blocks_by_graffiti(rewards, blocks)
+        blocks = load_or_download_blocks(rewards)
 
-    for (client, rewards) in res.items():
-        print(f"{client}: {len(rewards)}")
+        res = classify_rewards_and_blocks_by_graffiti(rewards, blocks)
+
+        for (client, examples) in res.items():
+            for (block_rewards, _) in examples:
+                store_block_rewards(block_rewards, client, proc_data_dir)
 
 if __name__ == "__main__":
     main()
