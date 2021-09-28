@@ -145,8 +145,8 @@ The response is of the following form:
 }
 ```
 
-* `best_guess_single` is the single _most probable_ guess of the client this block was proposed
-   by.
+* `best_guess_single` is the single client that the classifier deemed most likely to have
+   proposed this block.
 * `best_guess_multi` is a list of 1-2 client guesses. If the classifier is more than 95% sure
    of a single client then the multi guess will be the same as `best_guess_single`. Otherwise
    it will be a string of the form "Lighthouse or Teku" with 2 clients in lexicographic order.
