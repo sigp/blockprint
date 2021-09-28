@@ -64,6 +64,20 @@ def compute_multilabel(guess_list):
     else:
         return "Unknown"
 
+def compute_best_guess(probability_map) -> str:
+    return max(probability_map.keys(), key=lambda client: probability_map[client])
+
+def classify(classifier, block_reward):
+    res = classifier.predict_proba([into_feature_row(block_reward)])
+
+    prob_by_client = {client: res[0][i] for i, client in enumerate(CLIENTS)}
+
+    multilabel = compute_multilabel(compute_guess_list(prob_by_client))
+
+    label = compute_best_guess(prob_by_client)
+
+    return (label, multilabel, prob_by_client)
+
 def main():
     data_dir = sys.argv[1]
 
@@ -78,11 +92,7 @@ def main():
     frequency_map = {}
 
     for block_reward in block_rewards:
-        res = classifier.predict_proba([into_feature_row(block_reward)])
-
-        prob_by_client = {client: res[0][i] for i, client in enumerate(CLIENTS)}
-
-        multilabel = compute_multilabel(compute_guess_list(prob_by_client))
+        _, multilabel, prob_by_client = classify(classifier, block_reward)
 
         if multilabel not in frequency_map:
             frequency_map[multilabel] = 0
