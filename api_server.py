@@ -1,17 +1,16 @@
 import json
 import falcon
 
-from knn_classifier import init_classifier, classify
+from knn_classifier import Classifier as KNNClassifier
 
 DATA_DIR = "./training_data_proc"
 
 class Classifier:
     def __init__(self, datadir):
         print("Initialising classifier, this could take a moment...")
-        classifier, score = init_classifier(datadir)
-        print(f"Start-up complete, classifier score is {score}")
+        classifier = KNNClassifier(datadir)
+        print(f"Start-up complete, classifier score is {classifier.score}")
         self.classifier = classifier
-        self.score = score
 
     def on_post(self, req, resp):
         try:
@@ -29,7 +28,7 @@ class Classifier:
            resp.code = falcon.HTTP_400
            return
 
-        best_guess_single, best_guess_multi, probability_map = classify(self.classifier, block_reward)
+        best_guess_single, best_guess_multi, probability_map = self.classifier.classify(block_reward)
 
         result = {
             "block_root": block_reward["block_root"],
