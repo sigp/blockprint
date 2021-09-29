@@ -1,4 +1,7 @@
 requests
-sklearn
+scikit-learn
 numpy
 falcon
+sseclient-py
+gunicorn
+matplotlib
