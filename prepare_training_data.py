@@ -7,7 +7,7 @@ import json
 from load_blocks import load_or_download_blocks, store_block_rewards
 
 # In lexicographic order, as that's what SciKit uses internally
-CLIENTS = ['Lighthouse', 'Nimbus', 'Prysm', 'Teku']
+CLIENTS = ['Lighthouse', 'Lodestar', 'Nimbus', 'Prysm', 'Teku']
 
 REGEX_PATTERNS = {
     "Lighthouse": [
@@ -26,7 +26,12 @@ REGEX_PATTERNS = {
         "prylabs",
         ".*[Dd][Aa]pp[Nn]ode",
         "SharedStake.org Prysm",
-    ]
+        # Prater only
+        # "graffitiwall:",
+    ],
+    "Lodestar": [
+        "ChainSafe/Lodestar-v",
+    ],
 }
 
 REGEX = {client: [re.compile(pattern) for pattern in patterns]

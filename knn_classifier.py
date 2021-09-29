@@ -3,6 +3,8 @@
 import os
 import sys
 import json
+import numpy as np
+import matplotlib.pyplot as plt
 
 from sklearn.neighbors import KNeighborsClassifier
 from feature_selection import *
@@ -20,39 +22,76 @@ CONFIDENCE_THRESHOLD = 0.95
 
 def into_feature_row(block_reward):
     num_attestations = feat_num_attestations(block_reward)
+
     num_redundant = feat_num_redundant(block_reward)
-    num_ordered = feat_num_pairwise_ordered(block_reward)
-    ordered_percent = safe_div(num_ordered + 1, num_attestations)
     redundant_percent = safe_div(num_redundant, num_attestations)
 
-    return [redundant_percent, ordered_percent]
+    num_ordered = feat_num_pairwise_ordered(block_reward)
+    ordered_percent = safe_div(num_ordered + 1, num_attestations)
 
-def init_classifier(data_dir):
+    reward_norm = feat_total_reward_norm(block_reward)
+
+    return [redundant_percent, ordered_percent, reward_norm]
+
+def init_classifier(data_dir, plot_output=None):
     feature_matrix = []
     training_labels = []
 
-    for client in CLIENTS:
+    enabled_clients = []
+
+    for i, client in enumerate(CLIENTS):
         client_dir = os.path.join(data_dir, client)
 
         if not os.path.exists(client_dir):
-            raise Exception(f"no training data provided for {client}")
+            continue
+        else:
+            enabled_clients.append(client)
 
         for reward_file in os.listdir(client_dir):
             with open(os.path.join(client_dir, reward_file), "r") as f:
                 block_reward = json.load(f)
 
             feature_matrix.append(into_feature_row(block_reward))
-            training_labels.append(client)
+            training_labels.append(i)
+
+    feature_matrix = np.array(feature_matrix)
+
+    if plot_output != None:
+        plot_feature_matrix(feature_matrix, training_labels, enabled_clients, plot_output)
 
     knn = KNeighborsClassifier(n_neighbors=K, weights=WEIGHTS)
     knn.fit(feature_matrix, training_labels)
     score = knn.score(feature_matrix, training_labels)
 
-    return knn, score
+    return knn, enabled_clients, score
 
-def compute_guess_list(probability_map) -> list:
+def plot_feature_matrix(feature_matrix, colours, enabled_clients, output_path):
+    fig = plt.figure()
+
+    ax = fig.add_subplot(projection='3d')
+
+    x = feature_matrix[:, 0]
+    y = feature_matrix[:, 1]
+    z = feature_matrix[:, 2]
+
+    scatter = ax.scatter(x, y, z, c=colours, marker=".", alpha=0.25, cmap="Set1")
+
+    handles, _ = scatter.legend_elements()
+    labels = enabled_clients
+
+    legend1 = ax.legend(handles, labels, loc="best", title="Client")
+    ax.add_artist(legend1)
+
+    ax.set_xlabel("redundant %")
+    ax.set_ylabel("ordered %")
+    ax.set_zlabel("reward norm")
+
+    fig.savefig(output_path)
+
+
+def compute_guess_list(probability_map, enabled_clients) -> list:
     guesses = []
-    for client in CLIENTS:
+    for client in enabled_clients:
         if probability_map[client] > CONFIDENCE_THRESHOLD:
             return [client]
         elif probability_map[client] > MIN_GUESS_THRESHOLD:
@@ -70,12 +109,12 @@ def compute_multilabel(guess_list):
 def compute_best_guess(probability_map) -> str:
     return max(probability_map.keys(), key=lambda client: probability_map[client])
 
-def classify(classifier, block_reward):
+def classify(classifier, enabled_clients, block_reward):
     res = classifier.predict_proba([into_feature_row(block_reward)])
 
-    prob_by_client = {client: res[0][i] for i, client in enumerate(CLIENTS)}
+    prob_by_client = {client: res[0][i] for i, client in enumerate(enabled_clients)}
 
-    multilabel = compute_multilabel(compute_guess_list(prob_by_client))
+    multilabel = compute_multilabel(compute_guess_list(prob_by_client, enabled_clients))
 
     label = compute_best_guess(prob_by_client)
 
@@ -85,7 +124,7 @@ def main():
     data_dir = sys.argv[1]
     classify_dir = sys.argv[2]
 
-    classifier, score = init_classifier(data_dir)
+    classifier, enabled_clients, score = init_classifier(data_dir, plot_output="knn.svg")
 
     print(f"classifier score: {score}")
 
@@ -98,7 +137,7 @@ def main():
             block_rewards = json.load(f)
 
         for block_reward in block_rewards:
-            _, multilabel, prob_by_client = classify(classifier, block_reward)
+            _, multilabel, prob_by_client = classify(classifier, enabled_clients, block_reward)
 
             if multilabel not in frequency_map:
                 frequency_map[multilabel] = 0
