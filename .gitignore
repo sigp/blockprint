@@ -1,4 +1,5 @@
 *.json
 *.pdf
 *.svg
+*.sqlite
 venv

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from feature_selection import *
 from load_blocks import load_or_download_blocks
-from prepare_training_data import classify_rewards_and_blocks_by_graffiti, CLIENTS
+from prepare_training_data import CLIENTS
 
 # K = 1
 # WEIGHTS = "uniform"
@@ -122,7 +122,7 @@ def compute_multilabel(guess_list):
         return "Unknown"
 
 def compute_best_guess(probability_map) -> str:
-    return max(probability_map.keys(), key=lambda client: probability_map[client])
+    return max(probability_map.keys(), key=lambda client: probability_map[client], default="Unknown")
 
 def main():
     data_dir = sys.argv[1]
