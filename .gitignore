@@ -2,4 +2,5 @@
 *.pdf
 *.svg
 *.sqlite
+*.csv
 venv

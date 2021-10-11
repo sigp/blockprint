@@ -44,6 +44,11 @@ def download_block(block_root, beacon_node):
 
 def store_block_rewards(block_rewards, client, proc_data_dir):
     block_root = block_rewards["block_root"]
+
+    # Delete unused fields to save disk space
+    block_rewards["attestation_rewards"]["prev_epoch_rewards"] = {}
+    block_rewards["attestation_rewards"]["curr_epoch_rewards"] = {}
+
     client_dir = os.path.join(proc_data_dir, client)
     os.makedirs(client_dir, exist_ok=True)
     with open(os.path.join(client_dir, f"{block_root}.json"), "w") as f:
@@ -60,10 +65,17 @@ def download_block_reward_batches(start_slot, end_slot, output_dir, beacon_node=
         res = requests.get(url)
         res.raise_for_status()
 
+        block_rewards = res.json()
+
+        for block_reward in block_rewards:
+            # Delete unused fields to save disk space
+            block_reward["attestation_rewards"]["prev_epoch_rewards"] = {}
+            block_reward["attestation_rewards"]["curr_epoch_rewards"] = {}
+
         os.makedirs(output_dir, exist_ok=True)
         filename = f"slot_{batch_start}_to_{batch_end}.json"
         with open(os.path.join(output_dir, filename), "w") as f:
-            json.dump(res.json(), f)
+            json.dump(block_rewards, f)
 
 def main():
     start_slot = int(sys.argv[1])
