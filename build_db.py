@@ -62,6 +62,22 @@ def build_block_db(db_path, data_dir, classify_dir):
 
     return conn
 
+def block_row_to_obj(row):
+    slot = row[0]
+    proposer = row[1]
+    best_guess_single = row[2]
+    best_guess_multi = row[3]
+
+    probability_map = { client: row[4 + i] for i, client in enumerate(CLIENTS) }
+
+    return {
+        "slot": slot,
+        "proposer_index": proposer,
+        "best_guess_single": best_guess_single,
+        "best_guess_multi": best_guess_multi,
+        "probability_map": probability_map
+    }
+
 def main():
     db_path = sys.argv[1]
     data_dir = sys.argv[2]

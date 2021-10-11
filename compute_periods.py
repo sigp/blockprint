@@ -9,6 +9,7 @@ import requests
 from knn_classifier import Classifier, compute_best_guess
 from multi_classifier import MultiClassifier
 from prepare_training_data import CLIENTS
+from build_db import block_row_to_obj
 
 DEFAULT_BN = "http://localhost:5052"
 
@@ -70,8 +71,9 @@ def create_period_db(slots_per_period, db_dir):
         """CREATE TABLE period_validators (
             period_id INT,
             validator_index INT,
-            recent_client TEXT,
-            most_common_client TEXT,
+            guess_k_recent TEXT,
+            guess_latest TEXT,
+            guess_most_common TEXT,
             FOREIGN KEY(period_id) REFERENCES periods(id)
         )
         """
@@ -79,16 +81,42 @@ def create_period_db(slots_per_period, db_dir):
 
     return conn
 
-def best_guess_for_period(proposals, end_slot):
-    relevant_proposals = [guess for (slot, _, guess, _) in proposals if slot <= end_slot]
+# Guess the client from the most recent 3 proposals.
+#
+# Prefer proposals from within the period but take into account later proposals if no others
+# available.
+def guess_from_k_recent(proposals, end_slot, k=3):
+    relevant_proposals = [block for block in proposals if block["slot"] <= end_slot]
 
     if len(relevant_proposals) == 0:
-        relevant_proposals = [guess for (_, _, guess, _) in proposals]
+        relevant_proposals = proposals
 
-    num_recent = max(3, len(relevant_proposals))
+    num_recent = max(k, len(relevant_proposals))
     recent_relevant = relevant_proposals[-1 * num_recent:]
 
-    return compute_best_guess(count_frequency(recent_relevant))
+    return compute_best_guess(count_frequency([block["best_guess_single"] for block in recent_relevant]))
+
+# Guess the client from the single most recent proposal.
+#
+# Return "Unkown" if no proposal has slot less than `end_slot`, and "Uncertain" if the classifier
+# is not confident about the most recent proposal.
+def guess_from_latest(proposals, end_slot, check_prob=True):
+    relevant_proposals = [block for block in proposals if block["slot"] <= end_slot]
+
+    if len(relevant_proposals) == 0:
+        return "Unknown"
+
+    latest = relevant_proposals[-1]
+    guess = latest["best_guess_single"]
+
+    if not check_prob or latest["probability_map"][guess] > 0.95:
+        return guess
+    else:
+        return "Uncertain"
+
+# Guess the client from the most common classification, ignoring the period end slot.
+def guess_from_most_common(proposals, end_slot):
+    return compute_best_guess(count_frequency([block["best_guess_single"] for block in proposals]))
 
 def count_frequency(guesses):
     client_frequency = {}
@@ -113,19 +141,20 @@ def compute_period_validators(period, period_db, block_db):
 
     # Build validators table
     for validator_index in range(0, num_validators + 1):
-        proposals = list(block_db.execute(
-            """SELECT slot, proposer_index, best_guess_single, best_guess_multi
+        proposals = list(map(block_row_to_obj, block_db.execute(
+            """SELECT *
                FROM blocks
                WHERE proposer_index = ? ORDER BY slot ASC""",
                (validator_index,)
-        ))
+        )))
 
-        recent_client = best_guess_for_period(proposals, end_slot)
-        most_common_client = compute_best_guess(count_frequency([guess for (_, _, guess, _) in proposals]))
+        guess_k_recent = guess_from_k_recent(proposals, end_slot)
+        guess_latest = guess_from_latest(proposals, end_slot)
+        guess_most_common = guess_from_most_common(proposals, end_slot)
 
         period_db.execute(
-            "INSERT INTO period_validators VALUES (?, ?, ?, ?)",
-            (period_id, validator_index, recent_client, most_common_client)
+            "INSERT INTO period_validators VALUES (?, ?, ?, ?, ?)",
+            (period_id, validator_index, guess_k_recent, guess_latest, guess_most_common)
         )
 
     period_db.commit()
@@ -145,9 +174,9 @@ def build_period_db(block_db_path, period_db_dir, slots_per_period, bn_url=DEFAU
     print("done")
     return period_db
 
-def period_db_to_csv(period_db, output_file):
+def period_db_to_csv(period_db, output_file, guess_column="guess_k_recent"):
     # Output rows
-    fieldnames = ["period_id", "end_slot", "num_active_validators", "Unknown", *CLIENTS]
+    fieldnames = ["period_id", "end_slot", "num_active_validators", "Unknown", "Uncertain", *CLIENTS]
 
     csv_file = open(output_file, "w", newline="")
     writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
@@ -161,16 +190,18 @@ def period_db_to_csv(period_db, output_file):
             "end_slot": end_slot,
             "num_active_validators": num_active_validators,
             "Unknown": 0,
+            "Uncertain": 0
         }
 
         for client in CLIENTS:
             row[client] = 0
 
+        # NOTE: SQL injection. Don't read `guess_column` from the web lol
         client_counts = period_db.execute(
-            """SELECT recent_client, COUNT(validator_index)
-               FROM period_validators
-               WHERE period_id = ?
-               GROUP BY recent_client""",
+            f"""SELECT {guess_column}, COUNT(validator_index)
+                FROM period_validators
+                WHERE period_id = ?
+                GROUP BY {guess_column}""",
             (period_id,)
         )
 
