@@ -6,10 +6,12 @@ import sys
 import json
 import sqlite3
 import requests
+import statistics
 from knn_classifier import Classifier, compute_best_guess
 from multi_classifier import MultiClassifier
 from prepare_training_data import CLIENTS
 from build_db import block_row_to_obj
+from feature_selection import safe_div
 
 DEFAULT_BN = "http://localhost:5052"
 
@@ -72,8 +74,8 @@ def create_period_db(slots_per_period, db_dir):
             period_id INT,
             validator_index INT,
             guess_k_recent TEXT,
-            guess_latest TEXT,
-            guess_most_common TEXT,
+            guess_mode TEXT,
+            guess_med_95 TEXT,
             FOREIGN KEY(period_id) REFERENCES periods(id)
         )
         """
@@ -115,8 +117,36 @@ def guess_from_latest(proposals, end_slot, check_prob=True):
         return "Uncertain"
 
 # Guess the client from the most common classification, ignoring the period end slot.
-def guess_from_most_common(proposals, end_slot):
+def guess_from_mode(proposals, end_slot):
     return compute_best_guess(count_frequency([block["best_guess_single"] for block in proposals]))
+
+def guess_from_weighted_average(proposals, end_slot, confidence_threshold=0.95):
+    if len(proposals) == 0:
+        return "Unknown"
+
+    averages = {
+        client: sum(proposal["probability_map"][client] for proposal in proposals) / len(proposals)
+        for client in CLIENTS
+    }
+    best_guess = compute_best_guess(averages)
+    if averages[best_guess] > confidence_threshold:
+        return best_guess
+    else:
+        return "Uncertain"
+
+def guess_from_median(proposals, end_slot, confidence_threshold=0.95):
+    if len(proposals) == 0:
+        return "Unknown"
+
+    medians = {
+        client: statistics.median(proposal["probability_map"][client] for proposal in proposals)
+        for client in CLIENTS
+    }
+    best_guess = compute_best_guess(medians)
+    if medians[best_guess] > confidence_threshold:
+        return best_guess
+    else:
+        return "Uncertain"
 
 def count_frequency(guesses):
     client_frequency = {}
@@ -149,23 +179,24 @@ def compute_period_validators(period, period_db, block_db):
         )))
 
         guess_k_recent = guess_from_k_recent(proposals, end_slot)
-        guess_latest = guess_from_latest(proposals, end_slot)
-        guess_most_common = guess_from_most_common(proposals, end_slot)
+        guess_mode = guess_from_mode(proposals, end_slot)
+        guess_med_95 = guess_from_median(proposals, end_slot, confidence_threshold=0.95)
 
         period_db.execute(
             "INSERT INTO period_validators VALUES (?, ?, ?, ?, ?)",
-            (period_id, validator_index, guess_k_recent, guess_latest, guess_most_common)
+            (period_id, validator_index, guess_k_recent, guess_mode, guess_med_95)
         )
 
     period_db.commit()
 
-def build_period_db(block_db_path, period_db_dir, slots_per_period, bn_url=DEFAULT_BN):
+def build_period_db(block_db_path, period_db_dir, slots_per_period, periods=None, bn_url=DEFAULT_BN):
     block_db = sqlite3.connect(block_db_path)
 
     period_db = create_period_db(slots_per_period, period_db_dir)
 
-    print(f"fetching active validators every {slots_per_period} slots from BN")
-    periods = fetch_periods_from_bn(slots_per_period, bn_url)
+    if periods == None:
+        print(f"fetching active validators every {slots_per_period} slots from BN")
+        periods = fetch_periods_from_bn(slots_per_period, bn_url)
 
     for period in periods:
         print(f"computing validator client affinity up to slot {period['end_slot']}")
@@ -174,7 +205,7 @@ def build_period_db(block_db_path, period_db_dir, slots_per_period, bn_url=DEFAU
     print("done")
     return period_db
 
-def period_db_to_csv(period_db, output_file, guess_column="guess_k_recent"):
+def period_db_to_csv(period_db, output_file, guess_column="guess_med_95"):
     # Output rows
     fieldnames = ["period_id", "end_slot", "num_active_validators", "Unknown", "Uncertain", *CLIENTS]
 
