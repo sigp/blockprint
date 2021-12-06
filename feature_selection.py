@@ -44,3 +44,13 @@ def safe_div(x, y):
         return 0.0
     else:
         return x / y
+
+ALL_FEATURES = {
+    "num_attestations": feat_num_attestations,
+    "num_redundant": feat_num_redundant,
+    "num_pairwise_ordered": feat_num_pairwise_ordered,
+    "total_reward": feat_total_reward,
+    "total_reward_norm": feat_total_reward_norm,
+    "reward_per_attestation": feat_reward_per_attestation,
+    "num_single_bit": feat_num_single_bit
+}

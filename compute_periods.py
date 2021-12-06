@@ -15,6 +15,9 @@ from feature_selection import safe_div
 
 DEFAULT_BN = "http://localhost:5052"
 
+# The 95%-confidence median estimate seems to offer precision while still allowing for uncertainty
+DEFAULT_GUESS = "guess_med_95"
+
 def get_head_slot(bn_url):
     res = requests.get(f"{bn_url}/eth/v1/beacon/headers/head")
     res.raise_for_status()
@@ -189,6 +192,9 @@ def compute_period_validators(period, period_db, block_db):
 
     period_db.commit()
 
+def open_period_db(period_db_path):
+    return sqlite3.connect(period_db_path)
+
 def build_period_db(block_db_path, period_db_dir, slots_per_period, periods=None, bn_url=DEFAULT_BN):
     block_db = sqlite3.connect(block_db_path)
 
@@ -205,7 +211,85 @@ def build_period_db(block_db_path, period_db_dir, slots_per_period, periods=None
     print("done")
     return period_db
 
-def period_db_to_csv(period_db, output_file, guess_column="guess_med_95"):
+def slot_to_period_id(period_db, slot):
+    res = list(period_db.execute(
+        "SELECT id, MIN(end_slot) FROM periods WHERE end_slot > ?",
+        (slot,)
+    ))
+    assert len(res) == 1
+    period_id = res[0][0]
+    if period_id is None:
+        raise Exception(f"no period known for slot {slot}")
+    return int(period_id)
+
+def row_to_obj(row):
+    assert len(row) == 5
+
+    return {
+        "period_id": row[0],
+        "validator_index": row[1],
+        "guess_k_recent": row[2],
+        "guess_mode": row[3],
+        "guess_med_95": row[4]
+    }
+
+def most_recent_period_id(period_db):
+    res = list(period_db.execute("SELECT id, MAX(end_slot) FROM periods"))
+    assert len(res) == 1
+
+    period_id = res[0][0]
+    if period_id is None:
+        raise Exception("no max period, DB is probably empty")
+    return int(period_id)
+
+def get_data_for_validators(period_db, validator_indices=None, slot=None):
+    if slot is None:
+        period_id = most_recent_period_id(period_db)
+    else:
+        period_id = slot_to_period_id(period_db, slot)
+
+    if validator_indices is None:
+        rows = period_db.execute(
+            "SELECT * FROM period_validators WHERE period_id = ?",
+            [period_id]
+        )
+    else:
+        assert 0 < len(validator_indices) <= 999
+        rows = period_db.execute(
+            f"""SELECT * FROM period_validators WHERE period_id = ?
+                AND validator_index IN ({','.join(['?'] * len(validator_indices))})""",
+            [period_id, *validator_indices]
+        )
+
+    return [row_to_obj(row) for row in rows]
+
+def get_client_for_validators(period_db, validator_indices, slot=None, guess_column=DEFAULT_GUESS):
+    return {
+        x["validator_index"]: x[guess_column]
+        for x in get_data_for_validators(period_db, validator_indices, slot)
+    }
+
+def get_validators_per_client(period_db, period_id, guess_column=DEFAULT_GUESS):
+    validators_per_client = {
+        client: 0
+        for client in ["Unknown", "Uncertain", *CLIENTS]
+    }
+
+    # NOTE: SQL injection. Don't read `guess_column` from the web lol
+    client_counts = period_db.execute(
+        f"""SELECT {guess_column}, COUNT(validator_index)
+            FROM period_validators
+            WHERE period_id = ?
+            GROUP BY {guess_column}""",
+        (period_id,)
+    )
+
+    for (client, count) in client_counts:
+        validators_per_client[client] = int(count)
+
+    return validators_per_client
+
+def period_db_to_csv(period_db, output_file, guess_column=DEFAULT_GUESS):
     # Output rows
     fieldnames = ["period_id", "end_slot", "num_active_validators", "Unknown", "Uncertain", *CLIENTS]
 
@@ -220,24 +304,11 @@ def period_db_to_csv(period_db, output_file, guess_column="guess_med_95"):
             "period_id": period_id,
             "end_slot": end_slot,
             "num_active_validators": num_active_validators,
-            "Unknown": 0,
-            "Uncertain": 0
         }
 
-        for client in CLIENTS:
-            row[client] = 0
+        validators_per_client = get_validators_per_client(period_db, period_id, guess_column)
 
-        # NOTE: SQL injection. Don't read `guess_column` from the web lol
-        client_counts = period_db.execute(
-            f"""SELECT {guess_column}, COUNT(validator_index)
-                FROM period_validators
-                WHERE period_id = ?
-                GROUP BY {guess_column}""",
-            (period_id,)
-        )
-
-        for (client, count) in client_counts:
-            row[client] = count
+        row.update(validators_per_client)
 
         writer.writerow(row)
 

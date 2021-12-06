@@ -30,7 +30,11 @@ class MultiClassifier:
         slot = int(block_reward["meta"]["slot"])
 
         for (start_slot, end_slot, classifier) in self.classifiers:
-            if start_slot <= slot <= end_slot:
+            if start_slot <= slot:
                 return classifier.classify(block_reward)
 
         raise Exception(f"no classifier known for slot {slot}")
+
+    def scores(self):
+        return [(start_slot, end_slot, classifier.score)
+                for (start, end, classifier) in self.classifiers]

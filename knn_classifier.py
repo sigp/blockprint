@@ -119,10 +119,10 @@ def compute_multilabel(guess_list):
     elif len(guess_list) == 2:
         return f"{guess_list[0]} or {guess_list[1]}"
     else:
-        return "Unknown"
+        return "Uncertain"
 
 def compute_best_guess(probability_map) -> str:
-    return max(probability_map.keys(), key=lambda client: probability_map[client], default="Unknown")
+    return max(probability_map.keys(), key=lambda client: probability_map[client], default="Uncertain")
 
 def main():
     data_dir = sys.argv[1]

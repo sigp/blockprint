@@ -8,7 +8,6 @@ import json
 import requests
 import sseclient
 
-
 EVENT_URL = "http://localhost:5052/eth/v1/events?topics=block_reward"
 HEADERS = { "Accept": "text/event-stream" }
 
@@ -21,7 +20,14 @@ def main():
     client = sseclient.SSEClient(res)
 
     for event in client.events():
-        res = requests.post(f"{CLASSIFIER_URL}/classify", data=event.data)
+        data = json.loads(event.data)
+        slot = data["meta"]["slot"]
+        graffiti = data["meta"]["graffiti"]
+        att_reward = data['attestation_rewards']['total']
+        sync_reward = int(data["sync_committee_rewards"])
+        total_reward = att_reward + sync_reward
+        print(f"block at slot {slot} [[{graffiti}]]: {total_reward} gwei ({att_reward} + {sync_reward})")
+        res = requests.post(f"{CLASSIFIER_URL}/classify", data=json.dumps(data, ensure_ascii=False).encode("utf-8"))
         res.raise_for_status()
 
         classification = res.json()

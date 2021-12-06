@@ -29,9 +29,7 @@ REGEX_PATTERNS = {
         # Prater only
         # "graffitiwall:",
     ],
-    "Lodestar": [
-        "ChainSafe/Lodestar-v",
-    ],
+    "Lodestar": [],
 }
 
 REGEX = {client: [re.compile(pattern) for pattern in patterns]
