@@ -7,7 +7,7 @@ import json
 from load_blocks import store_block_rewards
 
 # In lexicographic order, as that's what SciKit uses internally
-CLIENTS = ['Lighthouse', 'Lodestar', 'Nimbus', 'Prysm', 'Teku']
+CLIENTS = ['Lighthouse', 'Lodestar', 'Nimbus', 'Other', 'Prysm', 'Teku']
 
 REGEX_PATTERNS = {
     "Lighthouse": [

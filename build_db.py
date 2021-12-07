@@ -92,7 +92,7 @@ def update_block_db(conn, classifier, block_rewards):
     conn.commit()
 
 def insert_block(conn, slot, parent_slot, proposer_index, label, multilabel, prob_by_client):
-    pr_clients = [prob_by_client.get(client) or 0.0 for client in CLIENTS]
+    pr_clients = [prob_by_client.get(client) or 0.0 for client in CLIENTS if client != "Other"]
 
     parent_id = load_block_parent_id(conn, parent_slot)
 
