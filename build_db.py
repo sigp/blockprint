@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import sqlite3
+import argparse
 from knn_classifier import Classifier, compute_best_guess
 from multi_classifier import MultiClassifier
 from prepare_training_data import CLIENTS
@@ -15,15 +16,15 @@ def list_all_files(classify_dir):
 
 def create_block_db(db_path):
     if os.path.exists(db_path):
+        print("deleting existing database")
         os.remove(db_path)
 
     conn = sqlite3.connect(db_path)
 
     conn.execute(
         """CREATE TABLE blocks (
-            id INTEGER PRIMARY KEY,
-            parent_id INTEGER,
             slot INT,
+            parent_slot INTEGER,
             proposer_index INT,
             best_guess_single TEXT,
             best_guess_multi TEXT,
@@ -32,7 +33,6 @@ def create_block_db(db_path):
             pr_nimbus FLOAT,
             pr_prysm FLOAT,
             pr_teku FLOAT,
-            FOREIGN KEY(parent_id) REFERENCES blocks(id),
             UNIQUE(slot, proposer_index)
         )
         """
@@ -49,17 +49,28 @@ def open_block_db(db_path):
 
     return sqlite3.connect(db_path)
 
-def build_block_db(db_path, data_dir, classify_dir, update=True):
-    if update:
-        conn = open_block_db(db_path)
+def open_or_create_db(db_path, force_create=False):
+    if os.path.exists(db_path) and not force_create:
+        return open_block_db(db_path)
     else:
-        conn = create_block_db(db_path)
+        return create_block_db(db_path)
 
-    print("loading classifier")
-    classifier = MultiClassifier(data_dir)
-    print("classifier loaded")
+def slot_range_from_filename(filename) -> (int, int):
+    parts = os.path.splitext(os.path.basename(filename))[0].split("_")
+    start_slot = int(parts[1])
+    end_slot = int(parts[3])
+    return (start_slot, end_slot)
+
+def build_block_db(db_path, classifier, classify_dir, force_rebuild=False):
+    conn = open_or_create_db(db_path, force_create=force_rebuild)
 
     for input_file in list_all_files(classify_dir):
+        start_slot, end_slot = slot_range_from_filename(input_file)
+
+        if slot_range_known_to_db(conn, start_slot, end_slot):
+            print(f"skipping {input_file} (assumed known)")
+            continue
+
         print(f"classifying rewards from file {input_file}")
         with open(input_file, "r") as f:
             block_rewards = json.load(f)
@@ -67,17 +78,6 @@ def build_block_db(db_path, data_dir, classify_dir, update=True):
         update_block_db(conn, classifier, block_rewards)
 
     return conn
-
-def load_block_parent_id(conn, parent_slot) -> int:
-    # TODO: could use some re-org proofing
-    res = list(conn.execute("SELECT MIN(id) FROM blocks WHERE slot = ?", [parent_slot]))
-    assert len(res) == 1
-
-    parent_id = res[0][0]
-    if parent_id is None:
-        return None
-    else:
-        return int(parent_id)
 
 def update_block_db(conn, classifier, block_rewards):
     for block_reward in block_rewards:
@@ -94,14 +94,12 @@ def update_block_db(conn, classifier, block_rewards):
 def insert_block(conn, slot, parent_slot, proposer_index, label, multilabel, prob_by_client):
     pr_clients = [prob_by_client.get(client) or 0.0 for client in CLIENTS if client != "Other"]
 
-    parent_id = load_block_parent_id(conn, parent_slot)
-
     conn.execute(
-        """INSERT INTO blocks (parent_id, slot, proposer_index, best_guess_single,
+        """INSERT INTO blocks (slot, parent_slot, proposer_index, best_guess_single,
                                best_guess_multi, pr_lighthouse, pr_lodestar, pr_nimbus,
                                pr_prysm, pr_teku)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (parent_id, slot, proposer_index, label, multilabel, *pr_clients)
+        (slot, parent_slot, proposer_index, label, multilabel, *pr_clients)
     )
 
 def get_greatest_block_slot(block_db):
@@ -115,8 +113,18 @@ def get_greatest_block_slot(block_db):
         return int(slot)
 
 def get_missing_parent_blocks(block_db):
-    res = list(block_db.execute("SELECT slot FROM blocks WHERE parent_id IS NULL AND slot <> 1"))
+    res = list(block_db.execute("""SELECT slot FROM blocks b1
+                                   WHERE
+                                      (SELECT slot FROM blocks WHERE slot = b1.parent_slot) IS NULL
+                                      AND slot <> 1"""))
     return res
+
+def slot_range_known_to_db(block_db, start_slot, end_slot):
+    res = list(block_db.execute("SELECT COUNT(*) FROM blocks WHERE slot >= ? AND slot <= ?",
+                                (start_slot, end_slot)))
+    assert len(res) == 1
+    count = int(res[0][0])
+    return count > 0
 
 def get_sync_status(block_db):
     greatest_block_slot = get_greatest_block_slot(block_db)
@@ -161,12 +169,29 @@ def block_row_to_obj(row):
         "probability_map": probability_map
     }
 
-def main():
-    db_path = sys.argv[1]
-    data_dir = sys.argv[2]
-    data_to_classify = sys.argv[3]
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--db-path", required=True, help="path to sqlite database file")
+    parser.add_argument("--data-dir", required=True, help="training data for classifier(s)")
+    parser.add_argument("--classify-dir", required=True, help="data to classify")
+    parser.add_argument("--multi-classifier", default=False, action="store_true", help="build MultiClassifier from datadir")
+    parser.add_argument("--force-rebuild", action="store_true", help="delete any existing database")
+    return parser.parse_args()
 
-    conn = build_block_db(db_path, data_dir, data_to_classify, update=False)
+def main():
+    args = parse_args()
+    db_path = args.db_path
+    data_dir = args.data_dir
+    data_to_classify = args.classify_dir
+
+    if args.multi_classifier:
+        classifier = MultiClassifier(data_dir)
+    else:
+        print("loading single KNN classifier")
+        classifier = Classifier(data_dir)
+        print("loaded")
+
+    conn = build_block_db(db_path, classifier, data_to_classify, force_rebuild=args.force_rebuild)
 
     conn.close()
 

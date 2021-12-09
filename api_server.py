@@ -5,8 +5,8 @@ from multi_classifier import MultiClassifier
 from build_db import open_block_db, get_blocks_per_client, get_sync_status
 from compute_periods import open_period_db, get_client_for_validators, get_validators_per_client
 
-DATA_DIR = "./data/mainnet/altair"
-BLOCK_DB = "./data.sqlite"
+DATA_DIR = "./data/mainnet/training"
+BLOCK_DB = "./block_db.sqlite"
 
 class Classify:
     def __init__(self, classifier):
