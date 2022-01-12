@@ -2,9 +2,9 @@
 
 set slots_per_period 221184
 set num_periods 1
-set offset 2375680
+set offset 2818048
 
-for i in (seq 0 $num_periods)
+for i in (seq 0 (math "$num_periods -  1"))
     set start_slot (math "$offset + $i * $slots_per_period + 1")
     set end_slot (math "$offset + ($i + 1) * $slots_per_period")
     set output_dir "data/mainnet/all/slots_"$start_slot"_to_"$end_slot
