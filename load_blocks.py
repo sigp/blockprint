@@ -74,7 +74,7 @@ def download_block_reward_batches(start_slot, end_slot, output_dir, beacon_node=
             json.dump(block_rewards, f)
 
 def download_block_rewards(start_slot, end_slot, beacon_node=BEACON_NODE):
-    url = f"{beacon_node}/lighthouse/block_rewards?start_slot={start_slot}&end_slot={end_slot}"
+    url = f"{beacon_node}/lighthouse/analysis/block_rewards?start_slot={start_slot}&end_slot={end_slot}"
     res = requests.get(url)
     res.raise_for_status()
     return res.json()

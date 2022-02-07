@@ -9,6 +9,8 @@ from knn_classifier import Classifier, compute_best_guess
 from multi_classifier import MultiClassifier
 from prepare_training_data import CLIENTS
 
+DB_CLIENTS = [client for client in CLIENTS if client != "Other"]
+
 def list_all_files(classify_dir):
     for root, _, files in os.walk(classify_dir):
         for filename in files:
@@ -92,7 +94,7 @@ def update_block_db(conn, classifier, block_rewards):
     conn.commit()
 
 def insert_block(conn, slot, parent_slot, proposer_index, label, multilabel, prob_by_client):
-    pr_clients = [prob_by_client.get(client) or 0.0 for client in CLIENTS if client != "Other"]
+    pr_clients = [prob_by_client.get(client) or 0.0 for client in DB_CLIENTS]
 
     conn.execute(
         """INSERT INTO blocks (slot, parent_slot, proposer_index, best_guess_single,
@@ -113,11 +115,37 @@ def get_greatest_block_slot(block_db):
         return int(slot)
 
 def get_missing_parent_blocks(block_db):
-    res = list(block_db.execute("""SELECT slot FROM blocks b1
-                                   WHERE
-                                      (SELECT slot FROM blocks WHERE slot = b1.parent_slot) IS NULL
-                                      AND slot <> 1"""))
-    return res
+    res = block_db.execute("""SELECT slot FROM blocks b1
+                              WHERE
+                                (SELECT slot FROM blocks WHERE slot = b1.parent_slot) IS NULL
+                                AND slot <> 1""")
+    return [int(x[0]) for x in res]
+
+def get_greatest_prior_block_slot(block_db, slot):
+    res = list(block_db.execute("SELECT MAX(slot) FROM blocks WHERE slot < ?", (slot,)))
+    assert len(res) == 1
+
+    slot = res[0][0]
+    if slot is None:
+        return None
+    else:
+        return int(slot)
+
+def get_sync_gaps(block_db):
+    missing_parent_slots = get_missing_parent_blocks(block_db)
+    gaps = []
+
+    for block_slot in missing_parent_slots:
+        prior_slot = get_greatest_prior_block_slot(block_db, block_slot)
+
+        if prior_slot is None:
+            start_slot = 0
+        else:
+            start_slot = prior_slot + 1
+        end_slot = block_slot - 1
+
+        gaps.append({"start": start_slot, "end": end_slot})
+    return gaps
 
 def slot_range_known_to_db(block_db, start_slot, end_slot):
     res = list(block_db.execute("SELECT COUNT(*) FROM blocks WHERE slot >= ? AND slot <= ?",
@@ -153,21 +181,28 @@ def get_blocks_per_client(block_db, start_slot, end_slot):
 
     return blocks_per_client
 
-def block_row_to_obj(row):
-    slot = row[0]
-    proposer = row[1]
-    best_guess_single = row[2]
-    best_guess_multi = row[3]
+def get_validator_blocks(block_db, validator_index, since_slot=None):
+    since_slot = since_slot or 0
+    rows = block_db.execute(
+        """SELECT slot, best_guess_single, best_guess_multi, pr_lighthouse, pr_lodestar,
+                  pr_nimbus, pr_prysm, pr_teku
+           FROM blocks WHERE proposer_index = ? AND slot >= ?""",
+           (validator_index, since_slot)
+    )
 
-    probability_map = { client: row[4 + i] for i, client in enumerate(CLIENTS) }
+    def row_to_json(row):
+        slot = row[0]
+        best_guess_single = row[1]
+        best_guess_multi = row[2]
+        probability_map = { client: row[3 + i] for i, client in enumerate(DB_CLIENTS) }
 
-    return {
-        "slot": slot,
-        "proposer_index": proposer,
-        "best_guess_single": best_guess_single,
-        "best_guess_multi": best_guess_multi,
-        "probability_map": probability_map
-    }
+        return {
+            "slot": slot,
+            "best_guess_single": best_guess_single,
+            "best_guess_multi": best_guess_multi,
+            "probability_map": probability_map
+        }
+    return [row_to_json(row) for row in rows]
 
 def parse_args():
     parser = argparse.ArgumentParser()
