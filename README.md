@@ -8,6 +8,12 @@ It's the backend behind these tweets:
 * 21 Oct 2021: https://twitter.com/sproulM_/status/1451065804183662592
 * 22 Sep 2021: https://twitter.com/sproulM_/status/1440512518242197516
 
+## Public API
+
+As of Feb 11 2022 Blockprint is hosted on a server managed by Sigma Prime.
+
+For API documentation please see [`docs/api.md`](./docs/api.md).
+
 ## Running `blockprint`
 
 ### Lighthouse
