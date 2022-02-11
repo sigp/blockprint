@@ -42,7 +42,11 @@ class BlocksPerClient:
     def __init__(self, block_db):
         self.block_db = block_db
 
-    def on_get(self, req, resp, start_slot, end_slot):
+    def on_get(self, req, resp, start_epoch, end_epoch=None):
+        end_epoch = end_epoch or (start_epoch + 1)
+
+        start_slot = 32 * start_epoch
+        end_slot = 32 * end_epoch
         blocks_per_client = get_blocks_per_client(self.block_db, start_slot, end_slot)
         resp.text = json.dumps(blocks_per_client, ensure_ascii=False)
 
@@ -79,7 +83,8 @@ print("Done")
 block_db = open_block_db(BLOCK_DB)
 
 app.add_route("/classify", Classify(classifier, block_db))
-app.add_route("/blocks_per_client/{start_slot:int}/{end_slot:int}", BlocksPerClient(block_db))
+app.add_route("/blocks_per_client/{start_epoch:int}/{end_epoch:int}", BlocksPerClient(block_db))
+app.add_route("/blocks_per_client/{start_epoch:int}", BlocksPerClient(block_db))
 app.add_route("/validator/{validator_index:int}/blocks", ValidatorBlocks(block_db))
 app.add_route("/validator/{validator_index:int}/blocks/{since_slot:int}", ValidatorBlocks(block_db))
 app.add_route("/sync/status", SyncStatus(block_db))
