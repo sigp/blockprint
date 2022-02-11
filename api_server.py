@@ -5,7 +5,7 @@ from multi_classifier import MultiClassifier
 from build_db import open_block_db, get_blocks_per_client, get_sync_status, get_sync_gaps, \
                      update_block_db, get_validator_blocks
 
-DATA_DIR = "./data/mainnet/training"
+DATA_DIR = "./data/mainnet/empty"
 BLOCK_DB = "./block_db.sqlite"
 BN_URL = "http://localhost:5052"
 SELF_URL = "http://localhost:8000"
@@ -74,6 +74,33 @@ class ValidatorBlocks:
         validator_blocks = get_validator_blocks(self.block_db, validator_index, since_slot)
         resp.text = json.dumps(validator_blocks, ensure_ascii=False)
 
+class MultipleValidatorsBlocks:
+    def __init__(self, block_db):
+        self.block_db = block_db
+
+    def on_post(self, req, resp, since_slot=None):
+        # Validate request.
+        try:
+            validator_indices = json.load(req.bounded_stream)
+        except json.decoder.JSONDecodeError as e:
+            resp.text = json.dumps({"error": f"invalid JSON: {e}"})
+            resp.code = falcon.HTTP_400
+            return
+
+        # I love type checking.
+        if type(validator_indices) != list or any(type(x) != int for x in validator_indices):
+            resp.text = json.dumps({"error": f"request must be a list of integers"})
+            resp.code = falcon.HTTP_400
+            return
+
+        all_blocks = {}
+        for validator_index in validator_indices:
+            validator_blocks = get_validator_blocks(self.block_db, validator_index, since_slot)
+            all_blocks[validator_index] = validator_blocks
+
+        resp.text = json.dumps(all_blocks, ensure_ascii=False)
+
+
 app = application = falcon.App()
 
 print("Initialising classifier, this could take a moment...")
@@ -87,6 +114,8 @@ app.add_route("/blocks_per_client/{start_epoch:int}/{end_epoch:int}", BlocksPerC
 app.add_route("/blocks_per_client/{start_epoch:int}", BlocksPerClient(block_db))
 app.add_route("/validator/{validator_index:int}/blocks", ValidatorBlocks(block_db))
 app.add_route("/validator/{validator_index:int}/blocks/{since_slot:int}", ValidatorBlocks(block_db))
+app.add_route("/validator/blocks", MultipleValidatorsBlocks(block_db))
+app.add_route("/validator/blocks/{since_slot:int}", MultipleValidatorsBlocks(block_db))
 app.add_route("/sync/status", SyncStatus(block_db))
 app.add_route("/sync/gaps", SyncGaps(block_db))
 
