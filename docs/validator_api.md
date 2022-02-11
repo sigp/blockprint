@@ -88,7 +88,7 @@ curl -u user:pass -X POST --data "[1023, 1024]" "https://api.blockprint.sigp.io/
     },
     {
       "slot": 2882842,
-      "best_guess_single": "[REDACTED],
+      "best_guess_single": "[REDACTED]",
       "best_guess_multi": "[REDACTED]",
       "probability_map": {
         "Lighthouse": 0,
