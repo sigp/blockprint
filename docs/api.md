@@ -7,9 +7,11 @@ The blockprint API is publicly accessible at `https://api.blockprint.sigp.io`.
 Return the number of blocks proposed by each client in the requested epochs.
 The `end_epoch` may be omitted to fetch data for a single epoch.
 
+These APIs intentionally group data by epoch to avoid identifying individual validators.
+
 ### Examples
 
-Get block proposers for a single epoch.
+Get block proposer client affinity for a single epoch.
 
 ```bash
 curl "https://api.blockprint.sigp.io/blocks_per_client/96000
@@ -27,7 +29,7 @@ curl "https://api.blockprint.sigp.io/blocks_per_client/96000
 }
 ```
 
-Get block proposers for several epochs.
+Get block proposer client affinity for several epochs. The `end_epoch` is _exclusive_.
 
 ```bash
 curl "https://api.blockprint.sigp.io/blocks_per_client/96000/97000"
