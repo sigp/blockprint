@@ -31,7 +31,7 @@ curl -u user:pass "https://api.blockprint.sigp.io/validator/1024/blocks/2500000"
     "best_guess_single": "Prysm",
     "best_guess_multi": "Prysm",
     "probability_map": {
-      "Lighthouse": 1,
+      "Lighthouse": 0,
       "Lodestar": 0,
       "Nimbus": 0,
       "Prysm": 0,
@@ -102,3 +102,38 @@ curl -u user:pass -X POST --data "[1023, 1024]" "https://api.blockprint.sigp.io/
   "1024": []
 }
 ```
+
+## `/blocks/{start_slot}/{end_slot}`
+
+Fetch detailed information on all blocks in a given range, including proposer
+index and estimated client. This is useful if you prefer a time-centric view
+to a validator-centric one.
+
+The `end_slot` is _exclusive_ and will default to infinity if omitted.
+
+### Example
+
+```bash
+curl -u user:pass "https://api.blockprint.sigp.io/blocks/1/2"
+```
+
+```json
+[
+  {
+    "slot": 1,
+    "proposer_index": 19026,
+    "best_guess_single": "[REDACTED]",
+    "best_guess_multi": "[REDACTED]",
+    "probability_map": {
+      "Lighthouse": 0,
+      "Lodestar": 0,
+      "Nimbus": 0,
+      "Prysm": 0,
+      "Teku": 0
+    }
+  }
+]
+```
+
+The response is the same as the `GET /validator/{index}/blocks` endpoint, with the addition of
+a `"proposer_index"` field.
