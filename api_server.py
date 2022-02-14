@@ -3,7 +3,7 @@ import falcon
 
 from multi_classifier import MultiClassifier
 from build_db import open_block_db, get_blocks_per_client, get_sync_status, get_sync_gaps, \
-                     update_block_db, get_validator_blocks
+                     update_block_db, get_validator_blocks, get_blocks
 
 DATA_DIR = "./data/mainnet/training"
 BLOCK_DB = "./block_db.sqlite"
@@ -100,6 +100,13 @@ class MultipleValidatorsBlocks:
 
         resp.text = json.dumps(all_blocks, ensure_ascii=False)
 
+class Blocks:
+    def __init__(self, block_db):
+        self.block_db = block_db
+
+    def on_get(self, req, resp, start_slot, end_slot=None):
+        blocks = get_blocks(self.block_db, start_slot, end_slot)
+        resp.text = json.dumps(blocks, ensure_ascii=False)
 
 app = application = falcon.App()
 
@@ -116,6 +123,8 @@ app.add_route("/validator/{validator_index:int}/blocks", ValidatorBlocks(block_d
 app.add_route("/validator/{validator_index:int}/blocks/{since_slot:int}", ValidatorBlocks(block_db))
 app.add_route("/validator/blocks", MultipleValidatorsBlocks(block_db))
 app.add_route("/validator/blocks/{since_slot:int}", MultipleValidatorsBlocks(block_db))
+app.add_route("/blocks/{start_slot:int}", Blocks(block_db))
+app.add_route("/blocks/{start_slot:int}/{end_slot:int}", Blocks(block_db))
 app.add_route("/sync/status", SyncStatus(block_db))
 app.add_route("/sync/gaps", SyncGaps(block_db))
 

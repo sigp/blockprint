@@ -204,6 +204,32 @@ def get_validator_blocks(block_db, validator_index, since_slot=None):
         }
     return [row_to_json(row) for row in rows]
 
+def get_blocks(block_db, start_slot, end_slot=None):
+    end_slot = end_slot or (1 << 62)
+
+    rows = block_db.execute(
+        """SELECT slot, proposer_index, best_guess_single, best_guess_multi, pr_lighthouse,
+           pr_lodestar, pr_nimbus, pr_prysm, pr_teku
+           FROM blocks WHERE slot >= ? AND slot < ?""",
+           (start_slot, end_slot)
+    )
+
+    def row_to_json(row):
+        slot = row[0]
+        proposer_index = int(row[1])
+        best_guess_single = row[2]
+        best_guess_multi = row[3]
+        probability_map = { client: row[4 + i] for i, client in enumerate(DB_CLIENTS) }
+
+        return {
+            "slot": slot,
+            "proposer_index": proposer_index,
+            "best_guess_single": best_guess_single,
+            "best_guess_multi": best_guess_multi,
+            "probability_map": probability_map
+        }
+    return [row_to_json(row) for row in rows]
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--db-path", required=True, help="path to sqlite database file")
