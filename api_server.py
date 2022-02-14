@@ -5,7 +5,7 @@ from multi_classifier import MultiClassifier
 from build_db import open_block_db, get_blocks_per_client, get_sync_status, get_sync_gaps, \
                      update_block_db, get_validator_blocks
 
-DATA_DIR = "./data/mainnet/empty"
+DATA_DIR = "./data/mainnet/training"
 BLOCK_DB = "./block_db.sqlite"
 BN_URL = "http://localhost:5052"
 SELF_URL = "http://localhost:8000"
