@@ -43,6 +43,25 @@ class BlockRewardListener:
                 print(f"Block listener failed with: {e}")
                 time.sleep(FAIL_WAIT_SECONDS)
 
+def explode_gap(start_slot, end_slot, sprp):
+    next_boundary = (start_slot // sprp + 1) * sprp
+
+    if end_slot > next_boundary:
+        return [(start_slot, next_boundary)] + explode_gap(next_boundary + 1, end_slot, sprp)
+    else:
+        return [(start_slot, end_slot)]
+
+def explode_gaps(gaps, sprp=2048):
+    "Divide sync gaps into manageable chunks aligned to Lighthouse's restore points"
+    exploded = []
+
+    for gap in gaps:
+        start_slot = int(gap["start"])
+        end_slot = int(gap["end"])
+        exploded.extend(explode_gap(start_slot, end_slot, sprp))
+
+    return exploded
+
 class Backfiller:
     def __init__(self, bn_url, blockprint_url):
         self.bn_url = bn_url
@@ -52,18 +71,16 @@ class Backfiller:
         while True:
             try:
                 sync_gaps = get_sync_gaps(self.blockprint_url)
+                chunks = explode_gaps(sync_gaps)
 
-                for gap in sync_gaps:
-                    start_slot = int(gap["start"])
-                    end_slot = int(gap["end"])
-
+                for (start_slot, end_slot) in chunks:
                     print(f"Downloading backfill blocks {start_slot}..={end_slot}")
                     block_rewards = download_block_rewards(start_slot, end_slot, beacon_node=self.bn_url)
 
                     print(f"Classifying backfill blocks {start_slot}..={end_slot}")
                     post_block_rewards(self.blockprint_url, block_rewards)
 
-                if len(sync_gaps) == 0:
+                if len(chunks) == 0:
                     print("Blockprint is synced")
                     time.sleep(BACKFILL_WAIT_SECONDS)
 
