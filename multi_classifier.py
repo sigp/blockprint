@@ -2,10 +2,12 @@ import os
 
 from knn_classifier import Classifier
 
+
 def start_and_end_slot(sub_dir_name) -> (int, int):
     start_slot = int(sub_dir_name.split("_")[1])
     end_slot = int(sub_dir_name.split("_")[3])
     return (start_slot, end_slot)
+
 
 # List of classifiers
 #
@@ -31,11 +33,15 @@ class MultiClassifier:
 
         for (i, (start_slot, end_slot, classifier)) in enumerate(self.classifiers):
             # Allow the last classifier to be used for slots beyond its end slot
-            if start_slot <= slot and (slot <= end_slot or i + 1 == len(self.classifiers)):
+            if start_slot <= slot and (
+                slot <= end_slot or i + 1 == len(self.classifiers)
+            ):
                 return classifier.classify(block_reward)
 
         raise Exception(f"no classifier known for slot {slot}")
 
     def scores(self):
-        return [(start_slot, end_slot, classifier.score)
-                for (start, end, classifier) in self.classifiers]
+        return [
+            (start_slot, end_slot, classifier.score)
+            for (start, end, classifier) in self.classifiers
+        ]

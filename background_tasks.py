@@ -14,10 +14,11 @@ BN_URL = "http://localhost:5052"
 BLOCKPRINT_URL = "http://localhost:8000"
 
 EVENT_URL_PATH = "eth/v1/events?topics=block_reward"
-HEADERS = { "Accept": "text/event-stream" }
+HEADERS = {"Accept": "text/event-stream"}
 
 BACKFILL_WAIT_SECONDS = 60
 FAIL_WAIT_SECONDS = 5
+
 
 class BlockRewardListener:
     def __init__(self, bn_url, blockprint_url):
@@ -43,13 +44,17 @@ class BlockRewardListener:
                 print(f"Block listener failed with: {e}")
                 time.sleep(FAIL_WAIT_SECONDS)
 
+
 def explode_gap(start_slot, end_slot, sprp):
     next_boundary = (start_slot // sprp + 1) * sprp
 
     if end_slot > next_boundary:
-        return [(start_slot, next_boundary)] + explode_gap(next_boundary + 1, end_slot, sprp)
+        return [(start_slot, next_boundary)] + explode_gap(
+            next_boundary + 1, end_slot, sprp
+        )
     else:
         return [(start_slot, end_slot)]
+
 
 def explode_gaps(gaps, sprp=2048):
     "Divide sync gaps into manageable chunks aligned to Lighthouse's restore points"
@@ -61,6 +66,7 @@ def explode_gaps(gaps, sprp=2048):
         exploded.extend(explode_gap(start_slot, end_slot, sprp))
 
     return exploded
+
 
 class Backfiller:
     def __init__(self, bn_url, blockprint_url):
@@ -75,7 +81,9 @@ class Backfiller:
 
                 for (start_slot, end_slot) in chunks:
                     print(f"Downloading backfill blocks {start_slot}..={end_slot}")
-                    block_rewards = download_block_rewards(start_slot, end_slot, beacon_node=self.bn_url)
+                    block_rewards = download_block_rewards(
+                        start_slot, end_slot, beacon_node=self.bn_url
+                    )
 
                     print(f"Classifying backfill blocks {start_slot}..={end_slot}")
                     post_block_rewards(self.blockprint_url, block_rewards)
@@ -87,6 +95,7 @@ class Backfiller:
             except Exception as e:
                 print(f"Backfiller failed with: {e}")
                 time.sleep(FAIL_WAIT_SECONDS)
+
 
 if __name__ == "__main__":
     listener_task = lambda: BlockRewardListener(BN_URL, BLOCKPRINT_URL).run()

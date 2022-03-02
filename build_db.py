@@ -11,10 +11,12 @@ from prepare_training_data import CLIENTS
 
 DB_CLIENTS = [client for client in CLIENTS if client != "Other"]
 
+
 def list_all_files(classify_dir):
     for root, _, files in os.walk(classify_dir):
         for filename in files:
             yield os.path.join(root, filename)
+
 
 def create_block_db(db_path):
     if os.path.exists(db_path):
@@ -45,11 +47,13 @@ def create_block_db(db_path):
 
     return conn
 
+
 def open_block_db(db_path):
     if not os.path.exists(db_path):
         raise Exception(f"no database found at {db_path}")
 
     return sqlite3.connect(db_path)
+
 
 def open_or_create_db(db_path, force_create=False):
     if os.path.exists(db_path) and not force_create:
@@ -57,11 +61,13 @@ def open_or_create_db(db_path, force_create=False):
     else:
         return create_block_db(db_path)
 
+
 def slot_range_from_filename(filename) -> (int, int):
     parts = os.path.splitext(os.path.basename(filename))[0].split("_")
     start_slot = int(parts[1])
     end_slot = int(parts[3])
     return (start_slot, end_slot)
+
 
 def build_block_db(db_path, classifier, classify_dir, force_rebuild=False):
     conn = open_or_create_db(db_path, force_create=force_rebuild)
@@ -81,6 +87,7 @@ def build_block_db(db_path, classifier, classify_dir, force_rebuild=False):
 
     return conn
 
+
 def update_block_db(conn, classifier, block_rewards):
     for block_reward in block_rewards:
         label, multilabel, prob_by_client = classifier.classify(block_reward)
@@ -89,11 +96,16 @@ def update_block_db(conn, classifier, block_rewards):
         slot = int(block_reward["meta"]["slot"])
         parent_slot = int(block_reward["meta"]["parent_slot"])
 
-        insert_block(conn, slot, parent_slot, proposer_index, label, multilabel, prob_by_client)
+        insert_block(
+            conn, slot, parent_slot, proposer_index, label, multilabel, prob_by_client
+        )
 
     conn.commit()
 
-def insert_block(conn, slot, parent_slot, proposer_index, label, multilabel, prob_by_client):
+
+def insert_block(
+    conn, slot, parent_slot, proposer_index, label, multilabel, prob_by_client
+):
     pr_clients = [prob_by_client.get(client) or 0.0 for client in DB_CLIENTS]
 
     conn.execute(
@@ -101,8 +113,9 @@ def insert_block(conn, slot, parent_slot, proposer_index, label, multilabel, pro
                                best_guess_multi, pr_lighthouse, pr_lodestar, pr_nimbus,
                                pr_prysm, pr_teku)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (slot, parent_slot, proposer_index, label, multilabel, *pr_clients)
+        (slot, parent_slot, proposer_index, label, multilabel, *pr_clients),
     )
+
 
 def get_greatest_block_slot(block_db):
     res = list(block_db.execute("SELECT MAX(slot) FROM blocks"))
@@ -114,12 +127,16 @@ def get_greatest_block_slot(block_db):
     else:
         return int(slot)
 
+
 def get_missing_parent_blocks(block_db):
-    res = block_db.execute("""SELECT slot FROM blocks b1
+    res = block_db.execute(
+        """SELECT slot FROM blocks b1
                               WHERE
                                 (SELECT slot FROM blocks WHERE slot = b1.parent_slot) IS NULL
-                                AND slot <> 1""")
+                                AND slot <> 1"""
+    )
     return [int(x[0]) for x in res]
+
 
 def get_greatest_prior_block_slot(block_db, slot):
     res = list(block_db.execute("SELECT MAX(slot) FROM blocks WHERE slot < ?", (slot,)))
@@ -130,6 +147,7 @@ def get_greatest_prior_block_slot(block_db, slot):
         return None
     else:
         return int(slot)
+
 
 def get_sync_gaps(block_db):
     missing_parent_slots = get_missing_parent_blocks(block_db)
@@ -147,33 +165,34 @@ def get_sync_gaps(block_db):
         gaps.append({"start": start_slot, "end": end_slot})
     return gaps
 
+
 def slot_range_known_to_db(block_db, start_slot, end_slot):
-    res = list(block_db.execute("SELECT COUNT(*) FROM blocks WHERE slot >= ? AND slot <= ?",
-                                (start_slot, end_slot)))
+    res = list(
+        block_db.execute(
+            "SELECT COUNT(*) FROM blocks WHERE slot >= ? AND slot <= ?",
+            (start_slot, end_slot),
+        )
+    )
     assert len(res) == 1
     count = int(res[0][0])
     return count > 0
 
+
 def get_sync_status(block_db):
     greatest_block_slot = get_greatest_block_slot(block_db)
     synced = len(get_missing_parent_blocks(block_db)) == 0
-    return {
-        "greatest_block_slot": greatest_block_slot,
-        "synced": synced
-    }
+    return {"greatest_block_slot": greatest_block_slot, "synced": synced}
+
 
 def get_blocks_per_client(block_db, start_slot, end_slot):
-    blocks_per_client = {
-        client: 0
-        for client in ["Uncertain", *CLIENTS]
-    }
+    blocks_per_client = {client: 0 for client in ["Uncertain", *CLIENTS]}
 
     client_counts = block_db.execute(
         """SELECT best_guess_single, COUNT(proposer_index)
            FROM blocks
            WHERE slot >= ? AND slot < ?
            GROUP BY best_guess_single""",
-        (start_slot, end_slot)
+        (start_slot, end_slot),
     )
 
     for (client, count) in client_counts:
@@ -181,28 +200,31 @@ def get_blocks_per_client(block_db, start_slot, end_slot):
 
     return blocks_per_client
 
+
 def get_validator_blocks(block_db, validator_index, since_slot=None):
     since_slot = since_slot or 0
     rows = block_db.execute(
         """SELECT slot, best_guess_single, best_guess_multi, pr_lighthouse, pr_lodestar,
                   pr_nimbus, pr_prysm, pr_teku
            FROM blocks WHERE proposer_index = ? AND slot >= ?""",
-           (validator_index, since_slot)
+        (validator_index, since_slot),
     )
 
     def row_to_json(row):
         slot = row[0]
         best_guess_single = row[1]
         best_guess_multi = row[2]
-        probability_map = { client: row[3 + i] for i, client in enumerate(DB_CLIENTS) }
+        probability_map = {client: row[3 + i] for i, client in enumerate(DB_CLIENTS)}
 
         return {
             "slot": slot,
             "best_guess_single": best_guess_single,
             "best_guess_multi": best_guess_multi,
-            "probability_map": probability_map
+            "probability_map": probability_map,
         }
+
     return [row_to_json(row) for row in rows]
+
 
 def get_blocks(block_db, start_slot, end_slot=None):
     end_slot = end_slot or (1 << 62)
@@ -211,7 +233,7 @@ def get_blocks(block_db, start_slot, end_slot=None):
         """SELECT slot, proposer_index, best_guess_single, best_guess_multi, pr_lighthouse,
            pr_lodestar, pr_nimbus, pr_prysm, pr_teku
            FROM blocks WHERE slot >= ? AND slot < ?""",
-           (start_slot, end_slot)
+        (start_slot, end_slot),
     )
 
     def row_to_json(row):
@@ -219,25 +241,37 @@ def get_blocks(block_db, start_slot, end_slot=None):
         proposer_index = int(row[1])
         best_guess_single = row[2]
         best_guess_multi = row[3]
-        probability_map = { client: row[4 + i] for i, client in enumerate(DB_CLIENTS) }
+        probability_map = {client: row[4 + i] for i, client in enumerate(DB_CLIENTS)}
 
         return {
             "slot": slot,
             "proposer_index": proposer_index,
             "best_guess_single": best_guess_single,
             "best_guess_multi": best_guess_multi,
-            "probability_map": probability_map
+            "probability_map": probability_map,
         }
+
     return [row_to_json(row) for row in rows]
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--db-path", required=True, help="path to sqlite database file")
-    parser.add_argument("--data-dir", required=True, help="training data for classifier(s)")
+    parser.add_argument(
+        "--data-dir", required=True, help="training data for classifier(s)"
+    )
     parser.add_argument("--classify-dir", required=True, help="data to classify")
-    parser.add_argument("--multi-classifier", default=False, action="store_true", help="build MultiClassifier from datadir")
-    parser.add_argument("--force-rebuild", action="store_true", help="delete any existing database")
+    parser.add_argument(
+        "--multi-classifier",
+        default=False,
+        action="store_true",
+        help="build MultiClassifier from datadir",
+    )
+    parser.add_argument(
+        "--force-rebuild", action="store_true", help="delete any existing database"
+    )
     return parser.parse_args()
+
 
 def main():
     args = parse_args()
@@ -252,9 +286,12 @@ def main():
         classifier = Classifier(data_dir)
         print("loaded")
 
-    conn = build_block_db(db_path, classifier, data_to_classify, force_rebuild=args.force_rebuild)
+    conn = build_block_db(
+        db_path, classifier, data_to_classify, force_rebuild=args.force_rebuild
+    )
 
     conn.close()
+
 
 if __name__ == "__main__":
     main()
