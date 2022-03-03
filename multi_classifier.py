@@ -42,6 +42,6 @@ class MultiClassifier:
 
     def scores(self):
         return [
-            (start_slot, end_slot, classifier.score)
+            (start, end, classifier.score)
             for (start, end, classifier) in self.classifiers
         ]

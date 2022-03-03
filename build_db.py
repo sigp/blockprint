@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import json
 import sqlite3
 import argparse
-from knn_classifier import Classifier, compute_best_guess
+from knn_classifier import Classifier
 from multi_classifier import MultiClassifier
 from prepare_training_data import CLIENTS
 

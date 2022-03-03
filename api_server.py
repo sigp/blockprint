@@ -31,8 +31,6 @@ class Classify:
             resp.code = falcon.HTTP_400
             return
 
-        results = []
-
         # Check required fields
         for block_reward in block_rewards:
             if (
@@ -110,7 +108,7 @@ class MultipleValidatorsBlocks:
         if type(validator_indices) != list or any(
             type(x) != int for x in validator_indices
         ):
-            resp.text = json.dumps({"error": f"request must be a list of integers"})
+            resp.text = json.dumps({"error": "request must be a list of integers"})
             resp.code = falcon.HTTP_400
             return
 

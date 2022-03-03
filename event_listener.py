@@ -28,7 +28,7 @@ def main():
         sync_reward = int(data["sync_committee_rewards"])
         total_reward = att_reward + sync_reward
         print(
-            f"block at slot {slot} [[{graffiti}]]: {total_reward} gwei ({att_reward} + {sync_reward})"
+            f"block at slot {slot} [[{graffiti}]]: {total_reward} gwei ({att_reward} + {sync_reward})"  # noqa: E501
         )
         res = requests.post(
             f"{CLASSIFIER_URL}/classify",

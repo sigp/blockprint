@@ -53,7 +53,7 @@ def classify_rewards_by_graffiti(rewards):
     for reward in rewards:
         client = classify_reward_by_graffiti(reward)
 
-        if client != None:
+        if client is not None:
             result[client].append(reward)
 
     return result

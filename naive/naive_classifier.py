@@ -1,5 +1,3 @@
-import json
-
 CLIENT_LABELS = ["Lighthouse", "Prysm", "Teku", "Teku or Nimbus"]
 
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import json
 import itertools
 import argparse
@@ -10,8 +9,8 @@ import matplotlib.pyplot as plt
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_validate
-from feature_selection import *
-from load_blocks import load_or_download_blocks
+from feature_selection import *  # noqa F403
+from feature_selection import ALL_FEATURES
 from prepare_training_data import CLIENTS
 
 K = 5
@@ -216,7 +215,7 @@ def main():
                 print(f"classifier scores: {classifier.scores['test_score']}")
         return
 
-    assert classify_dir != None, "classify dir required"
+    assert classify_dir is not None, "classify dir required"
     print(f"classifying all data in directory {classify_dir}")
     print(f"grouped clients: {grouped_clients}")
     classifier = Classifier(data_dir, grouped_clients=grouped_clients)

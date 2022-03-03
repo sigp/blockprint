@@ -2,16 +2,12 @@
 
 import os
 import csv
-import sys
-import json
 import sqlite3
 import requests
 import statistics
-from knn_classifier import Classifier, compute_best_guess
-from multi_classifier import MultiClassifier
+from knn_classifier import compute_best_guess
 from prepare_training_data import CLIENTS
 from build_db import block_row_to_obj
-from feature_selection import safe_div
 
 DEFAULT_BN = "http://localhost:5052"
 
@@ -231,7 +227,7 @@ def build_period_db(
 
     period_db = create_period_db(slots_per_period, period_db_dir)
 
-    if periods == None:
+    if periods is None:
         print(f"fetching active validators every {slots_per_period} slots from BN")
         periods = fetch_periods_from_bn(slots_per_period, bn_url)
 
