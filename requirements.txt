@@ -1,7 +1,7 @@
-requests
-scikit-learn
-numpy
-falcon
-sseclient-py
-gunicorn
-matplotlib
+requests==2.27.1
+scikit-learn==1.0.2
+numpy==1.22.2
+falcon==3.0.1
+sseclient-py==1.7.2
+gunicorn==20.1.0
+matplotlib==3.5.1
