@@ -4,3 +4,4 @@
 *.sqlite
 *.csv
 venv
+__pycache__/

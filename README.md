@@ -33,6 +33,7 @@ installed.
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
 ### k-NN Classifier
@@ -80,7 +81,18 @@ testdata_proc
     └── 0x7fedb0da9699c93ce66966555c6719e1159ae7b3220c7053a08c8f50e2f3f56f.json
 ```
 
-You can then use this directory as the datadir argument to `./knn_classifier.py`.
+You can then use this directory as the datadir argument to `./knn_classifier.py`:
+
+```
+./knn_classifier.py testdata_proc --classify testdata
+```
+
+If you then want to use the classifier to build an sqlite database:
+
+```
+./build_db.py --db-path block_db.sqlite --classify-dir testdata --data-dir testdata_proc
+```
+
 
 ### Running the API server
 
