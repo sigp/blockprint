@@ -25,3 +25,4 @@ jobs:
       working-directory: ./
       run: |
         black --check ./
+        flake8
