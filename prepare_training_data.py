@@ -10,22 +10,19 @@ from load_blocks import store_block_rewards
 CLIENTS = ["Lighthouse", "Lodestar", "Nimbus", "Other", "Prysm", "Teku"]
 
 REGEX_PATTERNS = {
-    "Lighthouse": [
-        "Lighthouse/v",
-        ".*[Ll]oopring",
-    ],
+    "Lighthouse": ["Lighthouse/v", ".*[Ll]oopring", r"RP-L v[0-9]*\.[0-9]*\.[0-9]*"],
     "Teku": [
         "teku/v",
         "bitcoinsuisse.com",
         ".*Allnodes",
+        r"RP-T v[0-9]*\.[0-9]*\.[0-9]*",
     ],
-    "Nimbus": [
-        "Nimbus/v",
-    ],
+    "Nimbus": ["Nimbus/v", r"RP-N v[0-9]*\.[0-9]*\.[0-9]*"],
     "Prysm": [
         "prylabs",
         ".*[Dd][Aa]pp[Nn]ode",
         "SharedStake.org Prysm",
+        r"RP-P v[0-9]*\.[0-9]*\.[0-9]*"
         # Prater only
         # "graffitiwall:",
     ],
