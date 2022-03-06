@@ -4,6 +4,7 @@ import sys
 import json
 from naive_classifier import classify_block, CLIENT_LABELS
 
+
 def main():
     input_file = sys.argv[1]
     with open(input_file, "r") as f:
@@ -17,6 +18,7 @@ def main():
     for client in CLIENT_LABELS:
         percentage = round(frequency_map[client] / len(rewards), 3)
         print(f"{client},{percentage}")
+
 
 if __name__ == "__main__":
     main()

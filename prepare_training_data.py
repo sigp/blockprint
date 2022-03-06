@@ -7,7 +7,7 @@ import json
 from load_blocks import store_block_rewards
 
 # In lexicographic order, as that's what SciKit uses internally
-CLIENTS = ['Lighthouse', 'Lodestar', 'Nimbus', 'Other', 'Prysm', 'Teku']
+CLIENTS = ["Lighthouse", "Lodestar", "Nimbus", "Other", "Prysm", "Teku"]
 
 REGEX_PATTERNS = {
     "Lighthouse": [
@@ -32,8 +32,11 @@ REGEX_PATTERNS = {
     "Lodestar": [],
 }
 
-REGEX = {client: [re.compile(pattern) for pattern in patterns]
-         for (client, patterns) in REGEX_PATTERNS.items()}
+REGEX = {
+    client: [re.compile(pattern) for pattern in patterns]
+    for (client, patterns) in REGEX_PATTERNS.items()
+}
+
 
 def classify_reward_by_graffiti(block_reward) -> str:
     graffiti = block_reward["meta"]["graffiti"]
@@ -43,16 +46,18 @@ def classify_reward_by_graffiti(block_reward) -> str:
                 return client
     return None
 
+
 def classify_rewards_by_graffiti(rewards):
     result = {client: [] for client in CLIENTS}
 
     for reward in rewards:
         client = classify_reward_by_graffiti(reward)
 
-        if client != None:
+        if client is not None:
             result[client].append(reward)
 
     return result
+
 
 def main():
     raw_data_dir = sys.argv[1]
@@ -68,6 +73,7 @@ def main():
         for (client, examples) in res.items():
             for block_rewards in examples:
                 store_block_rewards(block_rewards, client, proc_data_dir)
+
 
 if __name__ == "__main__":
     main()
