@@ -1,7 +1,11 @@
 *.json
+!tests/data/*
+!tests/data_proc/*/*
 *.pdf
 *.svg
 *.sqlite
 *.csv
 venv
 __pycache__/
+.DS_Store
+*.pkl
