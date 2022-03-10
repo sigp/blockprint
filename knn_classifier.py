@@ -6,6 +6,7 @@ import itertools
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_validate
@@ -182,8 +183,22 @@ def parse_args():
     parser.add_argument(
         "--group", default=[], nargs="+", help="clients to group during classification"
     )
-
+    parser.add_argument(
+        "--persist",
+        action="store_true",
+        dest="should_persist",
+        help="if provided, the model is persisted",
+    )
     return parser.parse_args()
+
+
+def persist_classifier(classifier: Classifier, name: str) -> None:
+    try:
+        filename = f"{name}.pkl"
+        with open(filename, "wb") as fid:
+            pickle.dump(classifier, fid)
+    except Exception as e:
+        print(f"Failed to persist classifier due to {e}")
 
 
 def main():
@@ -194,6 +209,7 @@ def main():
     num_grouped = args.cv_group
     num_features = args.cv_num_features
     grouped_clients = args.group
+    should_persist = args.should_persist
 
     if enable_cv:
         print("performing cross validation")
@@ -229,7 +245,7 @@ def main():
             block_rewards = json.load(f)
 
         for block_reward in block_rewards:
-            _, multilabel, prob_by_client = classifier.classify(block_reward)
+            _, multilabel, _ = classifier.classify(block_reward)
 
             if multilabel not in frequency_map:
                 frequency_map[multilabel] = 0
@@ -239,6 +255,9 @@ def main():
         total_blocks += len(block_rewards)
 
     print(f"total blocks processed: {total_blocks}")
+
+    if should_persist:
+        persist_classifier(classifier, "knn_classifier")
 
     for multilabel, num_blocks in sorted(frequency_map.items()):
         percentage = round(num_blocks / total_blocks, 4)
