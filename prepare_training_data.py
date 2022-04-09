@@ -4,6 +4,10 @@ import os
 import re
 import sys
 import json
+import multiprocessing
+import concurrent.futures
+import functools
+
 from load_blocks import store_block_rewards
 
 # In lexicographic order, as that's what SciKit uses internally
@@ -56,20 +60,36 @@ def classify_rewards_by_graffiti(rewards):
     return result
 
 
-def main():
+def process_file(raw_data_dir: str, proc_data_dir: str, file_name: str) -> None:
+    with open(os.path.join(raw_data_dir, file_name), "r") as f:
+        rewards = json.load(f)
+
+    res = classify_rewards_by_graffiti(rewards)
+
+    for (client, examples) in res.items():
+        for block_rewards in examples:
+            store_block_rewards(block_rewards, client, proc_data_dir)
+
+    print(f"Finished processing {file_name}")
+    sys.stdout.flush()
+
+
+def main() -> None:
     raw_data_dir = sys.argv[1]
     proc_data_dir = sys.argv[2]
 
-    for input_file in os.listdir(raw_data_dir):
-        print(f"processing {input_file}")
-        with open(os.path.join(raw_data_dir, input_file), "r") as f:
-            rewards = json.load(f)
+    try:
+        parallel_workers = sys.argv[3]
+    except IndexError:
+        parallel_workers = multiprocessing.cpu_count()
 
-        res = classify_rewards_by_graffiti(rewards)
+    input_files = os.listdir(raw_data_dir)
 
-        for (client, examples) in res.items():
-            for block_rewards in examples:
-                store_block_rewards(block_rewards, client, proc_data_dir)
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=parallel_workers
+    ) as executor:
+        partial = functools.partial(process_file, raw_data_dir, proc_data_dir)
+        executor.map(partial, input_files)
 
 
 if __name__ == "__main__":
