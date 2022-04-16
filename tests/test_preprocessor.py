@@ -24,4 +24,4 @@ def test_preprocessor() -> None:
     for _, _, files in os.walk("tests/data_proc"):
         correct_files.extend(files)
 
-    assert generated_files == correct_files
+    assert set(generated_files) == set(correct_files)

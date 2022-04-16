@@ -14,22 +14,10 @@ from load_blocks import store_block_rewards
 CLIENTS = ["Lighthouse", "Lodestar", "Nimbus", "Other", "Prysm", "Teku"]
 
 REGEX_PATTERNS = {
-    "Lighthouse": ["Lighthouse/v", ".*[Ll]oopring", r"RP-L v[0-9]*\.[0-9]*\.[0-9]*"],
-    "Teku": [
-        "teku/v",
-        "bitcoinsuisse.com",
-        ".*Allnodes",
-        r"RP-T v[0-9]*\.[0-9]*\.[0-9]*",
-    ],
-    "Nimbus": ["Nimbus/v", r"RP-N v[0-9]*\.[0-9]*\.[0-9]*"],
-    "Prysm": [
-        "prylabs",
-        ".*[Dd][Aa]pp[Nn]ode",
-        "SharedStake.org Prysm",
-        r"RP-P v[0-9]*\.[0-9]*\.[0-9]*"
-        # Prater only
-        # "graffitiwall:",
-    ],
+    "Lighthouse": [r".*[Ll]ighthouse", r"RP-L v[0-9]*\.[0-9]*\.[0-9]*.*"],
+    "Teku": [r".*[Tt]eku", r"RP-T v[0-9]*\.[0-9]*\.[0-9]*.*"],
+    "Nimbus": [r".*[Nn]imbus", r"RP-N v[0-9]*\.[0-9]*\.[0-9]*.*"],
+    "Prysm": [r".*[Pp]rysm", "prylabs", r"RP-P v[0-9]*\.[0-9]*\.[0-9]*.*"],
     "Lodestar": [],
 }
 
@@ -39,13 +27,16 @@ REGEX = {
 }
 
 
-def classify_reward_by_graffiti(block_reward) -> str:
-    graffiti = block_reward["meta"]["graffiti"]
+def check_graffiti(graffiti: str) -> str:
     for (client, regexes) in REGEX.items():
         for regex in regexes:
             if regex.match(graffiti):
                 return client
     return None
+
+
+def classify_reward_by_graffiti(block_reward) -> str:
+    return check_graffiti(block_reward["meta"]["graffiti"])
 
 
 def classify_rewards_by_graffiti(rewards):
