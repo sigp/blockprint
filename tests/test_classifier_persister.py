@@ -13,7 +13,7 @@ def create_test_classifier() -> Classifier:
 
 
 def load_test_blocks() -> List[Dict[str, Any]]:
-    test_data = "tests/data/slot_1000000_to_1000002.json"
+    test_data = "tests/data/slot_1000000_to_1000256.json"
     with open(test_data, "r") as f:
         block_rewards = json.load(f)
         return block_rewards

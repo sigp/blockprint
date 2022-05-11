@@ -14,7 +14,7 @@ from feature_selection import *  # noqa F403
 from feature_selection import ALL_FEATURES
 from prepare_training_data import CLIENTS
 
-K = 5
+K = 9
 WEIGHTS = "distance"
 
 MIN_GUESS_THRESHOLD = 0.20
