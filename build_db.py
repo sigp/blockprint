@@ -6,7 +6,7 @@ import sqlite3
 import argparse
 from knn_classifier import Classifier
 from multi_classifier import MultiClassifier
-from prepare_training_data import CLIENTS
+from prepare_training_data import CLIENTS, classify_reward_by_graffiti
 
 DB_CLIENTS = [client for client in CLIENTS if client != "Other"]
 
@@ -36,6 +36,7 @@ def create_block_db(db_path):
             pr_nimbus FLOAT,
             pr_prysm FLOAT,
             pr_teku FLOAT,
+            graffiti_guess TEXT,
             UNIQUE(slot, proposer_index)
         )
         """
@@ -94,25 +95,48 @@ def update_block_db(conn, classifier, block_rewards):
         proposer_index = block_reward["meta"]["proposer_index"]
         slot = int(block_reward["meta"]["slot"])
         parent_slot = int(block_reward["meta"]["parent_slot"])
+        graffiti_guess = classify_reward_by_graffiti(block_reward)
 
         insert_block(
-            conn, slot, parent_slot, proposer_index, label, multilabel, prob_by_client
+            conn,
+            slot,
+            parent_slot,
+            proposer_index,
+            label,
+            multilabel,
+            prob_by_client,
+            graffiti_guess,
         )
 
     conn.commit()
 
 
 def insert_block(
-    conn, slot, parent_slot, proposer_index, label, multilabel, prob_by_client
+    conn,
+    slot,
+    parent_slot,
+    proposer_index,
+    label,
+    multilabel,
+    prob_by_client,
+    graffiti_guess,
 ):
     pr_clients = [prob_by_client.get(client) or 0.0 for client in DB_CLIENTS]
 
     conn.execute(
         """INSERT INTO blocks (slot, parent_slot, proposer_index, best_guess_single,
                                best_guess_multi, pr_lighthouse, pr_lodestar, pr_nimbus,
-                               pr_prysm, pr_teku)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (slot, parent_slot, proposer_index, label, multilabel, *pr_clients),
+                               pr_prysm, pr_teku, graffiti_guess)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            slot,
+            parent_slot,
+            proposer_index,
+            label,
+            multilabel,
+            *pr_clients,
+            graffiti_guess,
+        ),
     )
 
 
@@ -251,6 +275,46 @@ def get_blocks(block_db, start_slot, end_slot=None):
         }
 
     return [row_to_json(row) for row in rows]
+
+
+def count_true_positives(block_db, client, slot_lower, slot_upper):
+    rows = block_db.execute(
+        """SELECT COUNT(*) FROM blocks
+           WHERE best_guess_single = ? AND graffiti_guess = ? AND
+                 slot >= ? AND slot < ?""",
+        (client, client, slot_lower, slot_upper),
+    )
+    return int(list(rows)[0][0])
+
+
+def count_true_negatives(block_db, client, slot_lower, slot_upper):
+    rows = block_db.execute(
+        """SELECT COUNT(*) FROM blocks
+           WHERE best_guess_single <> ? AND graffiti_guess <> ? AND graffiti_guess IS NOT NULL AND
+                 slot >= ? AND slot < ?""",
+        (client, client, slot_lower, slot_upper),
+    )
+    return int(list(rows)[0][0])
+
+
+def count_false_positives(block_db, client, slot_lower, slot_upper):
+    rows = block_db.execute(
+        """SELECT COUNT(*) FROM blocks
+           WHERE best_guess_single = ? AND graffiti_guess <> ? AND graffiti_guess IS NOT NULL AND
+                 slot >= ? AND slot < ?""",
+        (client, client, slot_lower, slot_upper),
+    )
+    return int(list(rows)[0][0])
+
+
+def count_false_negatives(block_db, client, slot_lower, slot_upper):
+    rows = block_db.execute(
+        """SELECT COUNT(*) FROM blocks
+           WHERE best_guess_single <> ? AND graffiti_guess = ? AND
+                 slot >= ? AND slot < ?""",
+        (client, client, slot_lower, slot_upper),
+    )
+    return int(list(rows)[0][0])
 
 
 def parse_args():
