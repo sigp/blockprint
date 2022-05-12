@@ -2,7 +2,8 @@ import pickle
 import json
 import os
 from typing import Any, Dict, List
-from knn_classifier import ENABLED_CLIENTS, Classifier, persist_classifier
+from knn_classifier import Classifier, persist_classifier
+from prepare_training_data import CLIENTS
 
 
 def create_test_classifier() -> Classifier:
@@ -29,6 +30,6 @@ def test_classifier_persister() -> None:
             clf_loaded = pickle.load(fid)
             test_blocks = load_test_blocks()
             for b in test_blocks:
-                assert clf_loaded.classify(b)[0] in ENABLED_CLIENTS
+                assert clf_loaded.classify(b)[0] in CLIENTS
     finally:
         os.remove(f"{name}.pkl")
