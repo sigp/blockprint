@@ -30,15 +30,13 @@ VIABLE_FEATURES = [
     "median_density",
 ]
 
-ENABLED_CLIENTS = ["Lighthouse", "Nimbus", "Prysm", "Teku"]
-
 
 def all_feature_vecs_with_dimension(dimension):
     return sorted(map(list, itertools.combinations(VIABLE_FEATURES, dimension)))
 
 
-def all_client_groupings_with_dimension(dimension):
-    return sorted(map(list, itertools.combinations(ENABLED_CLIENTS, dimension)))
+def all_client_groupings_with_dimension(enabled_clients, dimension):
+    return sorted(map(list, itertools.combinations(enabled_clients, dimension)))
 
 
 def into_feature_row(block_reward, features):
@@ -47,7 +45,12 @@ def into_feature_row(block_reward, features):
 
 class Classifier:
     def __init__(
-        self, data_dir, grouped_clients=[], features=DEFAULT_FEATURES, enable_cv=False
+        self,
+        data_dir,
+        grouped_clients=[],
+        disabled_clients=[],
+        features=DEFAULT_FEATURES,
+        enable_cv=False,
     ):
         feature_matrix = []
         training_labels = []
@@ -56,6 +59,9 @@ class Classifier:
         other_index = CLIENTS.index("Other")
 
         for i, client in enumerate(CLIENTS):
+            if client in disabled_clients:
+                continue
+
             client_dir = os.path.join(data_dir, client)
 
             if os.path.exists(client_dir):
@@ -189,6 +195,12 @@ def parse_args():
         dest="should_persist",
         help="if provided, the model is persisted",
     )
+    parser.add_argument(
+        "--disable",
+        default=[],
+        nargs="+",
+        help="clients to disable during cross validation",
+    )
     return parser.parse_args()
 
 
@@ -211,6 +223,13 @@ def main():
     grouped_clients = args.group
     should_persist = args.should_persist
 
+    disabled_clients = args.disable
+    enabled_clients = [
+        client
+        for client in CLIENTS
+        if client not in disabled_clients and client != "Other"
+    ]
+
     if enable_cv:
         print("performing cross validation")
         if num_features is None:
@@ -218,12 +237,15 @@ def main():
         else:
             feature_vecs = all_feature_vecs_with_dimension(num_features)
 
-        for grouped_clients in all_client_groupings_with_dimension(num_grouped):
+        for grouped_clients in all_client_groupings_with_dimension(
+            enabled_clients, num_grouped
+        ):
             for feature_vec in feature_vecs:
                 print(f"features: {feature_vec}")
                 classifier = Classifier(
                     data_dir,
                     grouped_clients=grouped_clients,
+                    disabled_clients=disabled_clients,
                     features=feature_vec,
                     enable_cv=True,
                 )
