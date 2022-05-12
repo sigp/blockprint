@@ -1,3 +1,4 @@
+import os
 import json
 import falcon
 
@@ -10,12 +11,17 @@ from build_db import (
     update_block_db,
     get_validator_blocks,
     get_blocks,
+    count_true_positives,
+    count_true_negatives,
+    count_false_positives,
+    count_false_negatives,
 )
 
 DATA_DIR = "./data/mainnet/training"
 BLOCK_DB = "./block_db.sqlite"
 BN_URL = "http://localhost:5052"
 SELF_URL = "http://localhost:8000"
+DISABLE_CLASSIFIER = "DISABLE_CLASSIFIER" in os.environ
 
 
 class Classify:
@@ -131,11 +137,32 @@ class Blocks:
         resp.text = json.dumps(blocks, ensure_ascii=False)
 
 
+class ConfusionMatrix:
+    def __init__(self, block_db):
+        self.block_db = block_db
+
+    def on_get(self, req, resp, client, start_slot, end_slot=None):
+        true_pos = count_true_positives(self.block_db, client, start_slot, end_slot)
+        true_neg = count_true_negatives(self.block_db, client, start_slot, end_slot)
+        false_pos = count_false_positives(self.block_db, client, start_slot, end_slot)
+        false_neg = count_false_negatives(self.block_db, client, start_slot, end_slot)
+        resp.text = json.dumps(
+            {
+                "true_pos": true_pos,
+                "true_neg": true_neg,
+                "false_pos": false_pos,
+                "false_neg": false_neg,
+            }
+        )
+
+
 app = application = falcon.App()
 
-print("Initialising classifier, this could take a moment...")
-classifier = MultiClassifier(DATA_DIR)
-print("Done")
+classifier = None
+if not DISABLE_CLASSIFIER:
+    print("Initialising classifier, this could take a moment...")
+    classifier = MultiClassifier(DATA_DIR) if not DISABLE_CLASSIFIER else None
+    print("Done")
 
 block_db = open_block_db(BLOCK_DB)
 
@@ -155,5 +182,8 @@ app.add_route("/blocks/{start_slot:int}", Blocks(block_db))
 app.add_route("/blocks/{start_slot:int}/{end_slot:int}", Blocks(block_db))
 app.add_route("/sync/status", SyncStatus(block_db))
 app.add_route("/sync/gaps", SyncGaps(block_db))
+app.add_route(
+    "/confusion/{client}/{start_slot:int}/{end_slot:int}", ConfusionMatrix(block_db)
+)
 
 print("Up")
