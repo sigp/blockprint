@@ -18,7 +18,7 @@ from build_db import (
 )
 
 DATA_DIR = "./data/mainnet/training"
-BLOCK_DB = "./block_db.sqlite"
+BLOCK_DB = os.environ.get("BLOCK_DB") or "./block_db.sqlite"
 BN_URL = "http://localhost:5052"
 SELF_URL = "http://localhost:8000"
 DISABLE_CLASSIFIER = "DISABLE_CLASSIFIER" in os.environ
