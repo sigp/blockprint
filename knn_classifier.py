@@ -138,9 +138,12 @@ class Classifier:
         legend1 = ax.legend(handles, labels, loc="best", title="Client")
         ax.add_artist(legend1)
 
-        ax.set_xlabel("redundant %")
-        ax.set_ylabel("ordered %")
-        ax.set_zlabel("reward norm")
+        assert (
+            len(self.features) == 3
+        ), "must have exactly 3 features selected for plotting"
+        ax.set_xlabel(self.features[0])
+        ax.set_ylabel(self.features[1])
+        ax.set_zlabel(self.features[2])
 
         fig.savefig(output_path)
 
@@ -201,6 +204,11 @@ def parse_args():
         nargs="+",
         help="clients to disable during cross validation",
     )
+    parser.add_argument(
+        "--plot",
+        type=str,
+        help="output plot of 3D training data vectors (only works with --classify)",
+    )
     return parser.parse_args()
 
 
@@ -257,6 +265,10 @@ def main():
     print(f"classifying all data in directory {classify_dir}")
     print(f"grouped clients: {grouped_clients}")
     classifier = Classifier(data_dir, grouped_clients=grouped_clients)
+
+    if args.plot is not None:
+        classifier.plot_feature_matrix(args.plot)
+        print("plot of training data written to {}".format(args.plot))
 
     frequency_map = {}
     total_blocks = 0
