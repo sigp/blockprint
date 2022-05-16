@@ -20,7 +20,7 @@ WEIGHTS = "distance"
 MIN_GUESS_THRESHOLD = 0.20
 CONFIDENCE_THRESHOLD = 0.95
 
-DEFAULT_FEATURES = ["percent_redundant", "percent_pairwise_ordered", "norm_reward"]
+DEFAULT_FEATURES = ["percent_redundant_boost", "percent_pairwise_ordered", "norm_reward"]
 
 VIABLE_FEATURES = [
     "percent_pairwise_ordered",
@@ -145,7 +145,10 @@ class Classifier:
         ax.set_ylabel(self.features[1])
         ax.set_zlabel(self.features[2])
 
-        fig.savefig(output_path)
+        if output_path is None:
+            fig.show()
+        else:
+            fig.savefig(output_path)
 
 
 def compute_guess_list(probability_map, enabled_clients) -> list:

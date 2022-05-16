@@ -30,6 +30,15 @@ def feat_num_redundant(block_reward):
     return redundant_attestations
 
 
+def feat_percent_redundant_boost(block_reward):
+    "Add +0.2 to the redundant percentage to create some separation from the 0.0 line"
+    percent_redundant = ALL_FEATURES["percent_redundant"](block_reward)
+    if percent_redundant == 0.0:
+        return 0.0
+    else:
+        return min(1.0, percent_redundant + 0.2)
+
+
 def feat_num_pairwise_ordered(block_reward):
     per_attestation_rewards = block_reward["attestation_rewards"][
         "per_attestation_rewards"
@@ -104,6 +113,7 @@ ALL_FEATURES = {
     "num_attestations": feat_num_attestations,
     "num_redundant": feat_num_redundant,
     "percent_redundant": scale_by_num_attestations(feat_num_redundant),
+    "percent_redundant_boost": feat_percent_redundant_boost,
     "num_pairwise_ordered": feat_num_pairwise_ordered,
     "percent_pairwise_ordered": scale_by_num_attestations(feat_num_pairwise_ordered),
     "reward": feat_total_reward,
