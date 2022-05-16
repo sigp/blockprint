@@ -1,3 +1,5 @@
+import scipy
+import difflib
 import statistics
 
 PHASE0_REWARD_BASE = 6_000_000
@@ -53,6 +55,35 @@ def feat_num_pairwise_ordered(block_reward):
     return sum(pairwise_comparisons) + 1
 
 
+def feat_difflib_sorted_distance(block_reward):
+    "Ratcliff and Obershelp distance of the per-attestation rewards from fully sorted"
+    per_attestation_rewards = block_reward["attestation_rewards"][
+        "per_attestation_rewards"
+    ]
+    attestation_totals = [sum(rewards.values()) for rewards in per_attestation_rewards]
+    sorted_attestation_totals = sorted(attestation_totals, reverse=True)
+    return difflib.SequenceMatcher(
+        None, attestation_totals, sorted_attestation_totals
+    ).ratio()
+
+
+def feat_spearman_correlation(block_reward):
+    "Spearman correlation coefficient for the per attestation rewards vs their sorted version"
+    per_attestation_rewards = block_reward["attestation_rewards"][
+        "per_attestation_rewards"
+    ]
+    attestation_totals = [sum(rewards.values()) for rewards in per_attestation_rewards]
+    sorted_attestation_totals = sorted(attestation_totals, reverse=True)
+    # Spearman coefficient isn't defined for uniform/constant sequences, so we just default
+    # that to 1.0
+    if attestation_totals == sorted_attestation_totals:
+        return 1.0
+    else:
+        return scipy.stats.spearmanr(
+            attestation_totals, sorted_attestation_totals
+        ).correlation
+
+
 def feat_total_reward(block_reward):
     total_reward = block_reward["attestation_rewards"]["total"]
     return total_reward
@@ -82,6 +113,16 @@ def feat_median_density(block_reward):
         len(rewards) // TARGET_COMMITTEE_SIZE for rewards in per_attestation_rewards
     ]
     return statistics.median(densities)
+
+
+def feat_mean_density(block_reward):
+    per_attestation_rewards = block_reward["attestation_rewards"][
+        "per_attestation_rewards"
+    ]
+    densities = [
+        len(rewards) // TARGET_COMMITTEE_SIZE for rewards in per_attestation_rewards
+    ]
+    return statistics.mean(densities)
 
 
 def safe_div(x, y):
@@ -116,11 +157,14 @@ ALL_FEATURES = {
     "percent_redundant_boost": feat_percent_redundant_boost,
     "num_pairwise_ordered": feat_num_pairwise_ordered,
     "percent_pairwise_ordered": scale_by_num_attestations(feat_num_pairwise_ordered),
+    "difflib_sorted_distance": feat_difflib_sorted_distance,
+    "spearman_correlation": feat_spearman_correlation,
     "reward": feat_total_reward,
     "norm_reward": feat_total_reward_norm,
     "norm_reward_per_slot": scale_by_num_slots(feat_total_reward_norm),
     "reward_per_attestation": scale_by_num_attestations(feat_total_reward),
     "median_density": feat_median_density,
+    "mean_density": feat_mean_density,
     "num_single_bit": feat_num_single_bit,
     "percent_single_bit": scale_by_num_attestations(feat_num_single_bit),
 }

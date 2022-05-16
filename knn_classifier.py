@@ -20,14 +20,21 @@ WEIGHTS = "distance"
 MIN_GUESS_THRESHOLD = 0.20
 CONFIDENCE_THRESHOLD = 0.95
 
-DEFAULT_FEATURES = ["percent_redundant_boost", "percent_pairwise_ordered", "norm_reward"]
+DEFAULT_FEATURES = [
+    "percent_redundant_boost",
+    "percent_pairwise_ordered",
+    "spearman_correlation",
+    "mean_density",
+]
 
 VIABLE_FEATURES = [
+    "percent_redundant_boost",
     "percent_pairwise_ordered",
-    "percent_redundant",
+    "difflib_sorted_distance",
+    "spearman_correlation",
     "norm_reward",
-    "norm_reward_per_slot",
-    "median_density",
+    "mean_density",
+    "percent_single_bit",
 ]
 
 
