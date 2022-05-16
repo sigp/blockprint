@@ -6,7 +6,7 @@ import sqlite3
 import argparse
 from knn_classifier import Classifier
 from multi_classifier import MultiClassifier
-from prepare_training_data import CLIENTS, classify_reward_by_graffiti
+from prepare_training_data import CLIENTS
 
 DB_CLIENTS = [client for client in CLIENTS if client != "Other"]
 
@@ -90,12 +90,13 @@ def build_block_db(db_path, classifier, classify_dir, force_rebuild=False):
 
 def update_block_db(conn, classifier, block_rewards):
     for block_reward in block_rewards:
-        label, multilabel, prob_by_client = classifier.classify(block_reward)
+        label, multilabel, prob_by_client, graffiti_guess = classifier.classify(
+            block_reward
+        )
 
         proposer_index = block_reward["meta"]["proposer_index"]
         slot = int(block_reward["meta"]["slot"])
         parent_slot = int(block_reward["meta"]["parent_slot"])
-        graffiti_guess = classify_reward_by_graffiti(block_reward)
 
         insert_block(
             conn,
