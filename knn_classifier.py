@@ -12,7 +12,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_validate
 from feature_selection import *  # noqa F403
 from feature_selection import ALL_FEATURES
-from prepare_training_data import CLIENTS
+from prepare_training_data import CLIENTS, classify_reward_by_graffiti
 
 K = 9
 WEIGHTS = "distance"
@@ -26,6 +26,9 @@ DEFAULT_FEATURES = [
     "spearman_correlation",
     "mean_density",
 ]
+
+
+DEFAULT_GRAFFITI_ONLY = ["Lodestar"]
 
 VIABLE_FEATURES = [
     "percent_redundant_boost",
@@ -56,9 +59,22 @@ class Classifier:
         data_dir,
         grouped_clients=[],
         disabled_clients=[],
+        graffiti_only_clients=DEFAULT_GRAFFITI_ONLY,
         features=DEFAULT_FEATURES,
         enable_cv=False,
     ):
+        graffiti_only_clients = set(graffiti_only_clients)
+
+        assert (
+            set(disabled_clients) & graffiti_only_clients == set()
+        ), "clients must not be both graffiti-only and disabled"
+        assert (
+            set(disabled_clients) & set(grouped_clients) == set()
+        ), "clients must not be both disabled and grouped"
+        assert (
+            set(grouped_clients) & graffiti_only_clients == set()
+        ), "clients must not be both graffiti-only and grouped"
+
         feature_matrix = []
         training_labels = []
 
@@ -66,7 +82,7 @@ class Classifier:
         other_index = CLIENTS.index("Other")
 
         for i, client in enumerate(CLIENTS):
-            if client in disabled_clients:
+            if client in disabled_clients or client in graffiti_only_clients:
                 continue
 
             client_dir = os.path.join(data_dir, client)
@@ -105,12 +121,19 @@ class Classifier:
 
         self.knn = knn
         self.enabled_clients = enabled_clients
+        self.graffiti_only_clients = set(graffiti_only_clients)
         self.features = features
 
         self.feature_matrix = feature_matrix
         self.training_labels = training_labels
 
     def classify(self, block_reward):
+        graffiti_guess = classify_reward_by_graffiti(block_reward)
+
+        if graffiti_guess in self.graffiti_only_clients:
+            prob_by_client = {graffiti_guess: 1.0}
+            return (graffiti_guess, graffiti_guess, prob_by_client, graffiti_guess)
+
         row = into_feature_row(block_reward, self.features)
         res = self.knn.predict_proba([row])
 
@@ -124,7 +147,7 @@ class Classifier:
 
         label = compute_best_guess(prob_by_client)
 
-        return (label, multilabel, prob_by_client)
+        return (label, multilabel, prob_by_client, graffiti_guess)
 
     def plot_feature_matrix(self, output_path):
         fig = plt.figure()
@@ -215,6 +238,12 @@ def parse_args():
         help="clients to disable during cross validation",
     )
     parser.add_argument(
+        "--graffiti-only",
+        default=DEFAULT_GRAFFITI_ONLY,
+        nargs="+",
+        help="clients to classify based on graffiti only",
+    )
+    parser.add_argument(
         "--plot",
         type=str,
         help="output plot of 3D training data vectors (only works with --classify)",
@@ -240,6 +269,7 @@ def main():
     num_features = args.cv_num_features
     grouped_clients = args.group
     should_persist = args.should_persist
+    graffiti_only = args.graffiti_only
 
     disabled_clients = args.disable
     enabled_clients = [
@@ -264,6 +294,7 @@ def main():
                     data_dir,
                     grouped_clients=grouped_clients,
                     disabled_clients=disabled_clients,
+                    graffiti_only_clients=graffiti_only,
                     features=feature_vec,
                     enable_cv=True,
                 )
@@ -289,7 +320,7 @@ def main():
             block_rewards = json.load(f)
 
         for block_reward in block_rewards:
-            _, multilabel, _ = classifier.classify(block_reward)
+            _, multilabel, _, _ = classifier.classify(block_reward)
 
             if multilabel not in frequency_map:
                 frequency_map[multilabel] = 0

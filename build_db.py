@@ -90,12 +90,13 @@ def build_block_db(db_path, classifier, classify_dir, force_rebuild=False):
 
 def update_block_db(conn, classifier, block_rewards):
     for block_reward in block_rewards:
-        label, multilabel, prob_by_client = classifier.classify(block_reward)
+        label, multilabel, prob_by_client, graffiti_guess = classifier.classify(
+            block_reward
+        )
 
         proposer_index = block_reward["meta"]["proposer_index"]
         slot = int(block_reward["meta"]["slot"])
         parent_slot = int(block_reward["meta"]["parent_slot"])
-        graffiti_guess = classify_reward_by_graffiti(block_reward)
 
         insert_block(
             conn,
