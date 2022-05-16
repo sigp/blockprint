@@ -6,7 +6,7 @@ import sqlite3
 import argparse
 from knn_classifier import Classifier
 from multi_classifier import MultiClassifier
-from prepare_training_data import CLIENTS, classify_reward_by_graffiti
+from prepare_training_data import CLIENTS
 
 DB_CLIENTS = [client for client in CLIENTS if client != "Other"]
 
