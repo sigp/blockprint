@@ -112,7 +112,7 @@ def feat_median_density(block_reward):
     densities = [
         len(rewards) // TARGET_COMMITTEE_SIZE for rewards in per_attestation_rewards
     ]
-    return statistics.median(densities)
+    return safe_median(densities)
 
 
 def feat_mean_density(block_reward):
@@ -122,7 +122,7 @@ def feat_mean_density(block_reward):
     densities = [
         len(rewards) // TARGET_COMMITTEE_SIZE for rewards in per_attestation_rewards
     ]
-    return statistics.mean(densities)
+    return safe_mean(densities)
 
 
 def safe_div(x, y):
@@ -130,6 +130,20 @@ def safe_div(x, y):
         return 0.0
     else:
         return x / y
+
+
+def safe_mean(values):
+    if values == []:
+        return 0.0
+    else:
+        return statistics.mean(values)
+
+
+def safe_median(values):
+    if values == []:
+        return 0.0
+    else:
+        return statistics.median(values)
 
 
 def scale_by_num_attestations(feature_fn):
