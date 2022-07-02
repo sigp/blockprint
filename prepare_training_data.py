@@ -15,10 +15,10 @@ from load_blocks import store_block_rewards
 CLIENTS = ["Lighthouse", "Lodestar", "Nimbus", "Other", "Prysm", "Teku"]
 
 REGEX_PATTERNS = {
-    "Lighthouse": [r".*[Ll]ighthouse", r"RP-L v[0-9]*\.[0-9]*\.[0-9]*.*"],
-    "Teku": [r".*[Tt]eku", r"RP-T v[0-9]*\.[0-9]*\.[0-9]*.*"],
-    "Nimbus": [r".*[Nn]imbus", r"RP-N v[0-9]*\.[0-9]*\.[0-9]*.*"],
-    "Prysm": [r".*[Pp]rysm", "prylabs", r"RP-P v[0-9]*\.[0-9]*\.[0-9]*.*"],
+    "Lighthouse": [r".*[Ll]ighthouse", r"RP-[A-Z]?L v[0-9]*\.[0-9]*\.[0-9]*.*"],
+    "Teku": [r".*[Tt]eku", r"RP-[A-Z]?T v[0-9]*\.[0-9]*\.[0-9]*.*"],
+    "Nimbus": [r".*[Nn]imbus", r"RP-[A-Z]?N v[0-9]*\.[0-9]*\.[0-9]*.*"],
+    "Prysm": [r".*[Pp]rysm", "prylabs", r"RP-[A-Z]?P v[0-9]*\.[0-9]*\.[0-9]*.*"],
     "Lodestar": [r".*[Ll]odestar"],
 }
 
@@ -91,6 +91,7 @@ def parse_args():
     parser.add_argument(
         "--num-workers",
         default=multiprocessing.cpu_count(),
+        type=int,
         help="number of parallel processes to utilize",
     )
     return parser.parse_args()
