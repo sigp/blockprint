@@ -55,7 +55,7 @@ def feat_num_pairwise_ordered(block_reward):
     return sum(pairwise_comparisons) + 1
 
 
-def feat_difflib_sorted_distance(block_reward):
+def feat_difflib_rewards(block_reward):
     "Ratcliff and Obershelp distance of the per-attestation rewards from fully sorted"
     per_attestation_rewards = block_reward["attestation_rewards"][
         "per_attestation_rewards"
@@ -65,6 +65,25 @@ def feat_difflib_sorted_distance(block_reward):
     return difflib.SequenceMatcher(
         None, attestation_totals, sorted_attestation_totals
     ).ratio()
+
+
+def generic_attestation_difflib(sort_key, reverse=False):
+    def feature_fn(block_reward):
+        raw_attestations = block_reward["attestation_rewards"].get("attestations") or []
+        per_attestation_rewards = block_reward["attestation_rewards"][
+            "per_attestation_rewards"
+        ]
+        attestation_rewards = [
+            sum(rewards.values()) for rewards in per_attestation_rewards
+        ]
+        attestations = [
+            (int(att["slot"]), int(att["index"]), att["beacon_block_root"], reward)
+            for (att, reward) in zip(raw_attestations, attestation_rewards)
+        ]
+        sorted_attestations = sorted(attestations, key=sort_key, reverse=reverse)
+        return difflib.SequenceMatcher(None, attestations, sorted_attestations).ratio()
+
+    return feature_fn
 
 
 def feat_spearman_correlation(block_reward):
@@ -171,7 +190,21 @@ ALL_FEATURES = {
     "percent_redundant_boost": feat_percent_redundant_boost,
     "num_pairwise_ordered": feat_num_pairwise_ordered,
     "percent_pairwise_ordered": scale_by_num_attestations(feat_num_pairwise_ordered),
-    "difflib_sorted_distance": feat_difflib_sorted_distance,
+    "difflib_rewards": feat_difflib_rewards,
+    "difflib_slot_index": generic_attestation_difflib(lambda x: (x[0], x[1])),
+    "difflib_index_slot": generic_attestation_difflib(lambda x: (x[1], x[0])),
+    "difflib_slot_index_rev": generic_attestation_difflib(
+        lambda x: (x[0], x[1]), reverse=True
+    ),
+    "difflib_index_slot_rev": generic_attestation_difflib(
+        lambda x: (x[1], x[0]), reverse=True
+    ),
+    "difflib_slot": generic_attestation_difflib(lambda x: x[0]),
+    "difflib_slot_rev": generic_attestation_difflib(lambda x: x[0], reverse=True),
+    "difflib_slot_reward": generic_attestation_difflib(lambda x: (x[0], x[3])),
+    "difflib_slot_reward_rev": generic_attestation_difflib(
+        lambda x: (x[0], x[3]), reverse=True
+    ),
     "spearman_correlation": feat_spearman_correlation,
     "reward": feat_total_reward,
     "norm_reward": feat_total_reward_norm,

@@ -7,6 +7,7 @@ import requests
 
 BLOCK_STORAGE = "blocks"
 BEACON_NODE = "http://localhost:5052"
+DEFAULT_BATCH_SIZE = os.environ.get("DEFAULT_BATCH_SIZE") or 2048
 
 
 def load_or_download_blocks(
@@ -67,9 +68,12 @@ def store_block_rewards(block_rewards, client, proc_data_dir):
 
 
 def download_block_reward_batches(
-    start_slot, end_slot, output_dir, beacon_node=BEACON_NODE, batch_size=2048
+    start_slot,
+    end_slot,
+    output_dir,
+    beacon_node=BEACON_NODE,
+    batch_size=DEFAULT_BATCH_SIZE,
 ):
-    # assert start_slot % 2048 == 1, "batch start should be 1 mod 2048 for efficiency"
     for batch_start in range(start_slot, end_slot, batch_size):
         batch_end = min(batch_start + batch_size - 1, end_slot)
 
@@ -89,7 +93,7 @@ def download_block_reward_batches(
 
 
 def download_block_rewards(start_slot, end_slot, beacon_node=BEACON_NODE):
-    url = f"{beacon_node}/lighthouse/analysis/block_rewards?start_slot={start_slot}&end_slot={end_slot}"  # noqa: E501
+    url = f"{beacon_node}/lighthouse/analysis/block_rewards?start_slot={start_slot}&end_slot={end_slot}&include_attestations=true"  # noqa: E501
     res = requests.get(url)
     res.raise_for_status()
     return res.json()

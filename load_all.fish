@@ -2,7 +2,7 @@
 
 set slots_per_period 221184
 set num_periods 1
-set offset 3039232
+set offset 3760128
 
 for i in (seq 0 (math "$num_periods -  1"))
     set start_slot (math "$offset + $i * $slots_per_period + 1")

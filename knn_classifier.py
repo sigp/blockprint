@@ -22,22 +22,29 @@ CONFIDENCE_THRESHOLD = 0.95
 
 DEFAULT_FEATURES = [
     "percent_redundant_boost",
-    "percent_pairwise_ordered",
-    "spearman_correlation",
-    "mean_density",
+    "difflib_rewards",
+    "difflib_slot",
+    "difflib_slot_rev",
 ]
-
 
 DEFAULT_GRAFFITI_ONLY = ["Lodestar"]
 
 VIABLE_FEATURES = [
     "percent_redundant_boost",
     "percent_pairwise_ordered",
-    "difflib_sorted_distance",
+    "difflib_rewards",
+    "difflib_slot_index",
+    "difflib_index_slot",
+    "difflib_slot_index_rev",
+    "difflib_index_slot_rev",
+    "difflib_slot",
+    "difflib_slot_rev",
     "spearman_correlation",
     "norm_reward",
     "mean_density",
     "percent_single_bit",
+    "difflib_slot_reward",
+    "difflib_slot_reward_rev",
 ]
 
 
@@ -99,7 +106,10 @@ class Classifier:
                 with open(os.path.join(client_dir, reward_file), "r") as f:
                     block_reward = json.load(f)
 
-                feature_matrix.append(into_feature_row(block_reward, features))
+                feature_row = into_feature_row(block_reward, features)
+                feature_matrix.append(feature_row)
+
+                # print(f"{client}: {feature_row}")
 
                 if client in grouped_clients:
                     training_labels.append(other_index)
@@ -279,6 +289,9 @@ def main():
     ]
 
     if enable_cv:
+        best_score = 0.0
+        best_features = None
+
         print("performing cross validation")
         if num_features is None:
             feature_vecs = [DEFAULT_FEATURES]
@@ -300,6 +313,15 @@ def main():
                 )
                 print(f"enabled clients: {classifier.enabled_clients}")
                 print(f"classifier scores: {classifier.scores['test_score']}")
+
+                min_score = min(classifier.scores["test_score"])
+
+                if min_score > best_score:
+                    best_features = feature_vec
+                    best_score = min_score
+
+        print(f"best features found: {best_features}")
+        print(f"score: {best_score}")
         return
 
     assert classify_dir is not None, "classify dir required"
