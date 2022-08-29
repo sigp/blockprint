@@ -103,6 +103,38 @@ curl -u user:pass -X POST --data "[1023, 1024]" "https://api.blockprint.sigp.io/
 }
 ```
 
+## `/validator/blocks/latest`
+
+Fetch the slot of the most recent block proposed by each validator along with the corresponding `best_guess_single`.
+This is useful when you need an overview of the whole validator set at the current moment and are not interested in previous blocks.
+
+## Example
+
+```bash
+curl -u user:pass "https://api.blockprint.sigp.io/validator/blocks/latest"
+```
+
+```json
+[
+  {
+    "proposer_index": 0,
+    "slot": 4430606,
+    "best_guess_single": "[REDACTED]"
+  },
+  {
+    "proposer_index": 1,
+    "slot": 4457868,
+    "best_guess_single": "[REDACTED]"
+  },
+  {
+    "proposer_index": 2,
+    "slot": 4222303,
+    "best_guess_single": "[REDACTED]"
+  },
+  ...
+]
+```
+
 ## `/blocks/{start_slot}/{end_slot}`
 
 Fetch detailed information on all blocks in a given range, including proposer
