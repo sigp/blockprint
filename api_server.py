@@ -10,6 +10,7 @@ from build_db import (
     get_sync_gaps,
     update_block_db,
     get_validator_blocks,
+    get_all_validators_latest_blocks,
     get_blocks,
     count_true_positives,
     count_true_negatives,
@@ -128,6 +129,15 @@ class MultipleValidatorsBlocks:
         resp.text = json.dumps(all_blocks, ensure_ascii=False)
 
 
+class AllValidatorsLatestBlocks:
+    def __init__(self, block_db):
+        self.block_db = block_db
+
+    def on_get(self, req, resp):
+        result = get_all_validators_latest_blocks(self.block_db)
+        resp.text = json.dumps(result, ensure_ascii=False)
+
+
 class Blocks:
     def __init__(self, block_db):
         self.block_db = block_db
@@ -178,6 +188,7 @@ app.add_route(
 )
 app.add_route("/validator/blocks", MultipleValidatorsBlocks(block_db))
 app.add_route("/validator/blocks/{since_slot:int}", MultipleValidatorsBlocks(block_db))
+app.add_route("/validator/blocks/latest", AllValidatorsLatestBlocks(block_db))
 app.add_route("/blocks/{start_slot:int}", Blocks(block_db))
 app.add_route("/blocks/{start_slot:int}/{end_slot:int}", Blocks(block_db))
 app.add_route("/sync/status", SyncStatus(block_db))

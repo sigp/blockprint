@@ -250,6 +250,28 @@ def get_validator_blocks(block_db, validator_index, since_slot=None):
     return [row_to_json(row) for row in rows]
 
 
+def get_all_validators_latest_blocks(block_db):
+    rows = block_db.execute(
+        """SELECT b1.proposer_index, b1.slot, b1.best_guess_single
+           FROM blocks b1
+           JOIN (SELECT MAX(slot) AS slot, proposer_index FROM blocks GROUP BY proposer_index)
+           AS b2 ON b1.slot = b2.slot AND b1.proposer_index = b2.proposer_index;"""
+    )
+
+    def row_to_json(row):
+        proposer_index = int(row[0])
+        slot = row[1]
+        best_guess_single = row[2]
+
+        return {
+            "proposer_index": proposer_index,
+            "slot": slot,
+            "best_guess_single": best_guess_single,
+        }
+
+    return [row_to_json(row) for row in rows]
+
+
 def get_blocks(block_db, start_slot, end_slot=None):
     end_slot = end_slot or (1 << 62)
 
