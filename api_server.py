@@ -38,22 +38,54 @@ class Classify:
             resp.code = falcon.HTTP_400
             return
 
-        # Check required fields
-        for block_reward in block_rewards:
-            if (
-                "block_root" not in block_reward
-                or "attestation_rewards" not in block_reward
-                or "per_attestation_rewards" not in block_reward["attestation_rewards"]
-            ):
-                resp.text = json.dumps({"error": "input JSON is not a block reward"})
-                resp.code = falcon.HTTP_400
-                return
+        if not check_block_rewards_ok(block_rewards, resp):
+            return
 
         update_block_db(self.block_db, self.classifier, block_rewards)
         print(
             f"Processed {len(block_rewards)} block{'' if block_rewards == [] else 's'}"
         )
         resp.text = "OK"
+
+
+class ClassifyNoStore:
+    def __init__(self, classifier):
+        self.classifier = classifier
+
+    def on_post(self, req, resp):
+        try:
+            block_rewards = json.load(req.bounded_stream)
+        except json.decoder.JSONDecodeError as e:
+            resp.text = json.dumps({"error": f"invalid JSON: {e}"})
+            resp.code = falcon.HTTP_400
+            return
+
+        if not check_block_rewards_ok(block_rewards, resp):
+            return
+
+        classifications = []
+        for block_reward in block_rewards:
+            label, _, _, _ = classifier.classify(block_reward)
+            classifications.append(
+                {
+                    "best_guess_single": label,
+                }
+            )
+        resp.text = json.dumps(classifications, ensure_ascii=False)
+
+
+def check_block_rewards_ok(block_rewards, resp):
+    # Check required fields
+    for block_reward in block_rewards:
+        if (
+            "block_root" not in block_reward
+            or "attestation_rewards" not in block_reward
+            or "per_attestation_rewards" not in block_reward["attestation_rewards"]
+        ):
+            resp.text = json.dumps({"error": "input JSON is not a block reward"})
+            resp.code = falcon.HTTP_400
+            return False
+    return True
 
 
 class BlocksPerClient:
@@ -176,6 +208,7 @@ if not DISABLE_CLASSIFIER:
 
 block_db = open_block_db(BLOCK_DB)
 
+app.add_route("/classify/no_store", ClassifyNoStore(classifier))
 app.add_route("/classify", Classify(classifier, block_db))
 app.add_route(
     "/blocks_per_client/{start_epoch:int}/{end_epoch:int}", BlocksPerClient(block_db)
