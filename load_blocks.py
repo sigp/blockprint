@@ -7,7 +7,7 @@ import requests
 
 BLOCK_STORAGE = "blocks"
 BEACON_NODE = "http://localhost:5052"
-DEFAULT_BATCH_SIZE = os.environ.get("DEFAULT_BATCH_SIZE") or 2048
+DEFAULT_BATCH_SIZE = int(os.environ.get("DEFAULT_BATCH_SIZE") or 2048)
 
 
 def load_or_download_blocks(
