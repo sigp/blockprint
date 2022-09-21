@@ -154,12 +154,12 @@ def get_greatest_block_slot(block_db):
 
 def get_missing_parent_blocks(block_db):
     res = block_db.execute(
-        """SELECT slot FROM blocks b1
-                              WHERE
-                                (SELECT slot FROM blocks WHERE slot = b1.parent_slot) IS NULL
-                                AND slot <> 1"""
+        """SELECT slot, parent_slot FROM blocks b1
+           WHERE
+             (SELECT slot FROM blocks WHERE slot = b1.parent_slot) IS NULL
+             AND slot <> 1"""
     )
-    return [int(x[0]) for x in res]
+    return [(int(x[0]), int(x[1])) for x in res]
 
 
 def get_greatest_prior_block_slot(block_db, slot):
@@ -177,8 +177,8 @@ def get_sync_gaps(block_db):
     missing_parent_slots = get_missing_parent_blocks(block_db)
     gaps = []
 
-    for block_slot in missing_parent_slots:
-        prior_slot = get_greatest_prior_block_slot(block_db, block_slot)
+    for (block_slot, parent_slot) in missing_parent_slots:
+        prior_slot = get_greatest_prior_block_slot(block_db, parent_slot)
 
         if prior_slot is None:
             start_slot = 0
@@ -186,6 +186,7 @@ def get_sync_gaps(block_db):
             start_slot = prior_slot + 1
         end_slot = block_slot - 1
 
+        assert end_slot >= start_slot
         gaps.append({"start": start_slot, "end": end_slot})
     return gaps
 
