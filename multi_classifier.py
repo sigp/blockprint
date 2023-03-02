@@ -1,6 +1,6 @@
 import os
 
-from knn_classifier import Classifier
+from .knn_classifier import Classifier
 
 
 def start_and_end_slot(sub_dir_name) -> (int, int):

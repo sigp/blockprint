@@ -10,9 +10,9 @@ import pickle
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_validate
-from feature_selection import *  # noqa F403
-from feature_selection import ALL_FEATURES
-from prepare_training_data import CLIENTS, classify_reward_by_graffiti
+from .feature_selection import *  # noqa F403
+from .feature_selection import ALL_FEATURES
+from .prepare_training_data import CLIENTS, classify_reward_by_graffiti
 
 K = 9
 WEIGHTS = "distance"
