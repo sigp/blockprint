@@ -127,8 +127,8 @@ def insert_block(
 
     conn.execute(
         """INSERT INTO blocks (slot, parent_slot, proposer_index, best_guess_single,
-                               best_guess_multi, pr_grandine, pr_lighthouse, pr_lodestar, pr_nimbus,
-                               pr_prysm, pr_teku, graffiti_guess)
+                               best_guess_multi, pr_grandine, pr_lighthouse, pr_lodestar,
+                               pr_nimbus, pr_prysm, pr_teku, graffiti_guess)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             slot,
