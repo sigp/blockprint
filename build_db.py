@@ -31,6 +31,7 @@ def create_block_db(db_path):
             proposer_index INT,
             best_guess_single TEXT,
             best_guess_multi TEXT,
+            pr_grandine FLOAT DEFAULT 0.0,
             pr_lighthouse FLOAT,
             pr_lodestar FLOAT,
             pr_nimbus FLOAT,
@@ -126,9 +127,9 @@ def insert_block(
 
     conn.execute(
         """INSERT INTO blocks (slot, parent_slot, proposer_index, best_guess_single,
-                               best_guess_multi, pr_lighthouse, pr_lodestar, pr_nimbus,
+                               best_guess_multi, pr_grandine, pr_lighthouse, pr_lodestar, pr_nimbus,
                                pr_prysm, pr_teku, graffiti_guess)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             slot,
             parent_slot,
@@ -229,7 +230,7 @@ def get_blocks_per_client(block_db, start_slot, end_slot):
 def get_validator_blocks(block_db, validator_index, since_slot=None):
     since_slot = since_slot or 0
     rows = block_db.execute(
-        """SELECT slot, best_guess_single, best_guess_multi, pr_lighthouse, pr_lodestar,
+        """SELECT slot, best_guess_single, best_guess_multi, pr_grandine, pr_lighthouse, pr_lodestar,
                   pr_nimbus, pr_prysm, pr_teku
            FROM blocks WHERE proposer_index = ? AND slot >= ?""",
         (validator_index, since_slot),
@@ -277,8 +278,8 @@ def get_blocks(block_db, start_slot, end_slot=None):
     end_slot = end_slot or (1 << 62)
 
     rows = block_db.execute(
-        """SELECT slot, proposer_index, best_guess_single, best_guess_multi, pr_lighthouse,
-           pr_lodestar, pr_nimbus, pr_prysm, pr_teku
+        """SELECT slot, proposer_index, best_guess_single, best_guess_multi, pr_grandine,
+           pr_lighthouse, pr_lodestar, pr_nimbus, pr_prysm, pr_teku
            FROM blocks WHERE slot >= ? AND slot < ?""",
         (start_slot, end_slot),
     )
