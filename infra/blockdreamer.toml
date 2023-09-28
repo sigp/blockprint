@@ -1,0 +1,32 @@
+network = "mainnet"
+canonical_bn = "http://localhost:7000"
+
+[[post_endpoints]]
+name = "sigp"
+url = "https://username:password@api.blockprint.sigp.io/gauge/classify"
+extra_data = true
+compare_rewards = true
+results_dir = "/mnt/dreamer/block_rewards"
+
+[[nodes]]
+name = "nimbus-subscribe-all"
+label = "Nimbus"
+url = "http://localhost:7000"
+skip_randao_verification = true
+
+[[nodes]]
+name = "lighthouse-subscribe-all"
+label = "Lighthouse"
+url = "http://localhost:7001"
+skip_randao_verification = true
+
+[[nodes]]
+name = "teku-subscribe-none"
+label = "Teku"
+url = "http://localhost:7002"
+
+[[nodes]]
+name = "grandine-subscribe-none"
+label = "Grandine"
+url = "http://localhost:7003"
+skip_randao_verification = true

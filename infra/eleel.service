@@ -1,0 +1,24 @@
+[Unit]
+Description=ElectricEel
+After=network.target
+
+[Service]
+User=blockprint
+Group=blockprint
+WorkingDirectory=/mnt/execution/eleel
+ExecStart=/usr/local/bin/eleel \
+  --ee-url "http://localhost:8551" \
+  --ee-jwt-secret "/mnt/execution/eleel/execution.jwt" \
+  --controller-jwt-secret "/mnt/execution/eleel/controller.jwt" \
+  --client-jwt-secrets "/mnt/execution/eleel/client-secrets.toml" \
+  --network mainnet \
+  --new-payload-wait-millis 3000 \
+  --fcu-wait-millis 1000 \
+  --fcu-matching head-only \
+  --payload-builder-extra-data "blockprint"
+Restart=on-failure
+LimitNOFILE=1000000
+Environment=RUST_LOG=eleel=trace
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=blockgauge
+After=network.target
+
+[Service]
+User=blockprint
+Group=blockprint
+WorkingDirectory=/home/blockprint/blockgauge
+ExecStart=/usr/local/bin/blockgauge
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

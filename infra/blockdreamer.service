@@ -1,0 +1,14 @@
+[Unit]
+Description=blockdreamer
+Requires=containerd.service
+After=network.service
+
+[Service]
+User=blockprint
+Group=blockprint
+ExecStart=docker run -i --network host --mount "type=bind,src=/storage/dreamer,dst=/mnt/dreamer" --workdir="/mnt/dreamer" \
+	ghcr.io/blockprint-collective/blockdreamer blockdreamer --config /mnt/dreamer/config.toml
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,18 @@
+[Unit]
+Description=Blockprint API Server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=blockprint
+Group=blockprint
+Type=simple
+Restart=always
+RestartSec=5
+Environment="PYTHONUNBUFFERED=1"
+# Environment="DISABLE_CLASSIFIER=1"
+WorkingDirectory=/home/blockprint/blockprint/scripts
+ExecStart=/home/blockprint/blockprint/scripts/start_server.sh
+
+[Install]
+WantedBy=multi-user.target

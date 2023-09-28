@@ -1,0 +1,29 @@
+[Unit]
+Description=Lighthouse Beacon Node
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=blockprint
+Group=blockprint
+Type=simple
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/blockprint
+ExecStart=/usr/local/bin/lighthouse bn \
+	--disable-lock-timeouts \
+	--slots-per-restore-point 4096 \
+	--network-load 1 \
+	--http \
+	--metrics \
+	--checkpoint-sync-url "https://mainnet.checkpoint.sigp.io" \
+	--reconstruct-historic-states \
+	--execution-endpoint "http://localhost:8552/canonical" \
+        --execution-jwt "/mnt/execution/controller.jwt" \
+	--suggested-fee-recipient 0xffffffffffffffffffffffffffffffffffffffff \
+	--always-prepare-payload \
+	--prepare-payload-lookahead 8000 \
+	--historic-state-cache-size 0
+
+[Install]
+WantedBy=multi-user.target

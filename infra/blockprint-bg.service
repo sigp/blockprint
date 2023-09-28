@@ -1,0 +1,17 @@
+[Unit]
+Description=Blockprint Background Tasks
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=blockprint
+Group=blockprint
+Type=simple
+Restart=always
+RestartSec=5
+Environment="PYTHONUNBUFFERED=1"
+WorkingDirectory=/home/blockprint/blockprint/scripts
+ExecStart=/home/blockprint/blockprint/scripts/start_background.sh
+
+[Install]
+WantedBy=multi-user.target

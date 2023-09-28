@@ -40,23 +40,71 @@ services enable that:
 
 ## Running `blockprint`
 
-TODO
+Run the API server (`api_server.py`) on `localhost` using Gunicorn or similar. There's an example
+service file in [`infra/blockprint.service`](../infra/blockprint.service).
 
 ## Running `blockprint-bg`
 
-TODO
+Run the background daemon (`background_tasks.py`) on the same server as the main blockprint API
+and the central Lighthouse instance. There's an example service file in
+[`infra/blockprint-bg.service`](../infra/blockprint-bg.service).
 
-## Running `blockdreamer`
+## Running `lighthouse`
 
-TODO
+Run Lighthouse alongside `blockprint` and `blockprint-bg`.
 
-## Running `blockgauge`
+If classification of historic blocks is desired, you need the `--reconstruct-historic-states` flag.
+Running a Lighthouse tree-states alpha can help keep the size of the CL archive down.
 
-TODO
+If you're running blockdreamer, you'll also need `--always-prepare-payload --prepare-payload-lookahead 8000`.
 
 ## Running `eleel`
 
-TODO
+You can run one Eleel instance per worker node, or one central instance serving all workers.
+
+Follow the [Eleel docs][eleel] for setting it up. We use the central Lighthouse node that serves
+block reward requests to control Eleel, although other configurations are possible.
+
+An example configuration file is included in [`infra/eleel.service`](../infra/eleel.service).
+
+## Running `blockgauge`
+
+We run [blockgauge][blockgauge] on the primary server alongside `blockprint` and `lighthouse`, both
+of which it connects to. Blockgauge's API is then accessed by the workers via HTTPS with basic auth,
+using a Caddy reverse proxy (see below).
+
+See [`infra/blockgauge.service`](../infra/blockgauge.service) for an example service file.
+
+## Running `blockdreamer`
+
+We use one blockdreamer instance per block-building worker machine. Follow the
+[blockdreamer docs][blockdreamer] for information on how to set it up. An example service file
+is included at [`infra/blockdreamer.service`](../infra/blockdreamer.service), and an example
+configuration TOML at [`infra/blockdreamer.toml`](../infra/blockdreamer.toml).
+
+We post to blockgauge on the primary server via HTTPS. This is authenticated with a username and
+password set in the `Caddyfile` (see below).
+
+## Running `caddy`
+
+We use Caddy to encrypt the traffic to and from the blockprint API and blockgauge. The `Caddyfile`
+for our server (minus passwords!) is in [`infra/Caddyfile`](../infra/Caddyfile).
+
+HTTP basic auth is used to protect the private blockprint APIs and the blockgauge endpoint.
+
+For Eleel, requests are authenticated with JWT secrets managed by Eleel itself.
+
+## Running workers
+
+Configuring each of the CL clients for compatibility with blockdreamer is a matter of tweaking a few
+parameters:
+
+- Ensure a unique P2P port is set (for nodes sharing the same host).
+- Ensure a unique HTTP port is set.
+- Use a dummy fee recipient to ensure that block building doesn't fail.
+- Connect to Eleel's client endpoint (`http://localhost:8552`, or `https://server.com/eleel`).
+- Use `skip_randao_verification` in the blockdreamer config for Lighthouse, Nimbus and Grandine
+  workers.
 
 ## Required Lighthouse APIs
 
