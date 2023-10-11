@@ -18,10 +18,10 @@ from build_db import (
     count_false_negatives,
 )
 
-DATA_DIR = "./data/mainnet/training"
-BLOCK_DB = os.environ.get("BLOCK_DB") or "./block_db.sqlite"
-BN_URL = "http://localhost:5052"
-SELF_URL = "http://localhost:8000"
+DATA_DIR = os.environ.get("DATA_DIR") or "./data/mainnet/training"
+BLOCK_DB = os.environ.get("BLOCK_DB") or "./data/block_db.sqlite"
+BN_URL = os.environ.get("BN_URL") or "http://localhost:5052"
+SELF_URL = "http://0.0.0.0:8000"
 DISABLE_CLASSIFIER = "DISABLE_CLASSIFIER" in os.environ
 
 
