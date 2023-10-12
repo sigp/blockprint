@@ -31,7 +31,7 @@ class MultiClassifier:
     def classify(self, block_reward):
         slot = int(block_reward["meta"]["slot"])
 
-        for (i, (start_slot, end_slot, classifier)) in enumerate(self.classifiers):
+        for i, (start_slot, end_slot, classifier) in enumerate(self.classifiers):
             # Allow the last classifier to be used for slots beyond its end slot
             if start_slot <= slot and (
                 slot <= end_slot or i + 1 == len(self.classifiers)

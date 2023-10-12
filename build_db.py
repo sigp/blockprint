@@ -178,7 +178,7 @@ def get_sync_gaps(block_db):
     missing_parent_slots = get_missing_parent_blocks(block_db)
     gaps = []
 
-    for (block_slot, parent_slot) in missing_parent_slots:
+    for block_slot, parent_slot in missing_parent_slots:
         prior_slot = get_greatest_prior_block_slot(block_db, parent_slot)
 
         if prior_slot is None:
@@ -221,7 +221,7 @@ def get_blocks_per_client(block_db, start_slot, end_slot):
         (start_slot, end_slot),
     )
 
-    for (client, count) in client_counts:
+    for client, count in client_counts:
         blocks_per_client[client] = int(count)
 
     return blocks_per_client
@@ -230,8 +230,8 @@ def get_blocks_per_client(block_db, start_slot, end_slot):
 def get_validator_blocks(block_db, validator_index, since_slot=None):
     since_slot = since_slot or 0
     rows = block_db.execute(
-        """SELECT slot, best_guess_single, best_guess_multi, pr_grandine, pr_lighthouse, pr_lodestar,
-                  pr_nimbus, pr_prysm, pr_teku
+        """SELECT slot, best_guess_single, best_guess_multi, pr_grandine, pr_lighthouse,
+                  pr_lodestar, pr_nimbus, pr_prysm, pr_teku
            FROM blocks WHERE proposer_index = ? AND slot >= ?""",
         (validator_index, since_slot),
     )
