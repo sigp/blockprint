@@ -30,7 +30,7 @@ REGEX = {
 
 
 def check_graffiti(graffiti: str, disabled_clients=[]) -> str:
-    for (client, regexes) in REGEX.items():
+    for client, regexes in REGEX.items():
         if client in disabled_clients:
             continue
 
@@ -66,7 +66,7 @@ def process_file(
 
     res = classify_rewards_by_graffiti(rewards, disabled_clients=disabled_clients)
 
-    for (client, examples) in res.items():
+    for client, examples in res.items():
         for block_rewards in examples:
             store_block_rewards(block_rewards, client, proc_data_dir)
 

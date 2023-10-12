@@ -79,7 +79,7 @@ class Backfiller:
                 sync_gaps = get_sync_gaps(self.blockprint_url)
                 chunks = explode_gaps(sync_gaps)
 
-                for (start_slot, end_slot) in chunks:
+                for start_slot, end_slot in chunks:
                     print(f"Downloading backfill blocks {start_slot}..={end_slot}")
                     block_rewards = download_block_rewards(
                         start_slot, end_slot, beacon_node=self.bn_url

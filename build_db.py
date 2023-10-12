@@ -178,7 +178,7 @@ def get_sync_gaps(block_db):
     missing_parent_slots = get_missing_parent_blocks(block_db)
     gaps = []
 
-    for (block_slot, parent_slot) in missing_parent_slots:
+    for block_slot, parent_slot in missing_parent_slots:
         prior_slot = get_greatest_prior_block_slot(block_db, parent_slot)
 
         if prior_slot is None:
@@ -221,7 +221,7 @@ def get_blocks_per_client(block_db, start_slot, end_slot):
         (start_slot, end_slot),
     )
 
-    for (client, count) in client_counts:
+    for client, count in client_counts:
         blocks_per_client[client] = int(count)
 
     return blocks_per_client
