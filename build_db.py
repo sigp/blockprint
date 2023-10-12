@@ -230,8 +230,8 @@ def get_blocks_per_client(block_db, start_slot, end_slot):
 def get_validator_blocks(block_db, validator_index, since_slot=None):
     since_slot = since_slot or 0
     rows = block_db.execute(
-        """SELECT slot, best_guess_single, best_guess_multi, pr_grandine, pr_lighthouse, pr_lodestar,
-                  pr_nimbus, pr_prysm, pr_teku
+        """SELECT slot, best_guess_single, best_guess_multi, pr_grandine, pr_lighthouse,
+                  pr_lodestar, pr_nimbus, pr_prysm, pr_teku
            FROM blocks WHERE proposer_index = ? AND slot >= ?""",
         (validator_index, since_slot),
     )

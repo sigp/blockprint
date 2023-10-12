@@ -144,8 +144,8 @@ class MultipleValidatorsBlocks:
             return
 
         # I love type checking.
-        if type(validator_indices) != list or any(
-            type(x) != int for x in validator_indices
+        if type(validator_indices) is list or any(
+            type(x) is not int for x in validator_indices
         ):
             resp.text = json.dumps({"error": "request must be a list of integers"})
             resp.code = falcon.HTTP_400
