@@ -1,6 +1,7 @@
 import os
 import json
 import falcon
+import pickle
 
 from multi_classifier import MultiClassifier
 from build_db import (
@@ -19,10 +20,11 @@ from build_db import (
 )
 
 DATA_DIR = os.environ.get("DATA_DIR") or "./data/mainnet/training"
-BLOCK_DB = os.environ.get("BLOCK_DB") or "./data/block_db.sqlite"
+BLOCK_DB = os.environ.get("BLOCK_DB") or "./block_db.sqlite"
 BN_URL = os.environ.get("BN_URL") or "http://localhost:5052"
 SELF_URL = "http://0.0.0.0:8000"
 DISABLE_CLASSIFIER = "DISABLE_CLASSIFIER" in os.environ
+MODEL_PATH = os.environ.get("MODEL_PATH") or ""
 
 
 class Classify:
@@ -202,9 +204,18 @@ app = application = falcon.App()
 
 classifier = None
 if not DISABLE_CLASSIFIER:
-    print("Initialising classifier, this could take a moment...")
-    classifier = MultiClassifier(DATA_DIR) if not DISABLE_CLASSIFIER else None
-    print("Done")
+	if MODEL_PATH != "":
+		if MODEL_PATH.endswith('.pkl'):
+			print("Loading classifier from pickle file...")
+			classifier = pickle.load(open(MODEL_PATH, "rb"))
+			print("Loaded classifier into memory")
+		else:
+			print("model path must end with .pkl")
+			exit(0)
+	else:
+		print("Initialising classifier, this could take a moment...")
+		classifier = MultiClassifier(DATA_DIR) if not DISABLE_CLASSIFIER else None
+		print("Done")
 
 block_db = open_block_db(BLOCK_DB)
 
