@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # Tasks that are intended to run alongside the API server to keep it up to date.
+import os
 import time
 import json
 import requests
@@ -10,8 +11,8 @@ import multiprocessing
 from api_client import post_block_rewards, get_sync_gaps
 from load_blocks import download_block_rewards
 
-BN_URL = "http://localhost:5052"
-BLOCKPRINT_URL = "http://localhost:8000"
+BN_URL = os.environ.get("BN_URL") or "http://localhost:5052"
+BLOCKPRINT_URL = os.environ.get("BP_URL") or "http://localhost:8000"
 
 EVENT_URL_PATH = "eth/v1/events?topics=block_reward"
 HEADERS = {"Accept": "text/event-stream"}
