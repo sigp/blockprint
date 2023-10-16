@@ -7,24 +7,31 @@ services:
   bp:
     build:
       context: .
-      dockerfile: bp.Dockerfile
+      dockerfile: Dockerfile
     environment:
       - MODEL_PATH=/app/model/model.pkl
       - BN_URL=${BP_URL:-localhost:5052}
       - GUNICORN_CMD_ARGS="--bind=0.0.0.0"
+      - PYTHONUNBUFFERED=1
     volumes:
       - ${DATA_DIR:-./training_data}:/app/data/mainnet/training
       - ${MODEL_PATH:-./model.pkl}:/app/model/model.pkl
       - ./block_db.sqlite:/app/block_db.sqlite
-    network_mode: 'host'
+    networks:
+      - cluster
     entrypoint: ["gunicorn", "--timeout", "1800", "api_server:app"]
                 
   bp-bg:
     build:
       context: .
-      dockerfile: bp-bg.Dockerfile
-    network_mode: 'host'
-    entrypoint: ["python3.9", "background_tasks.py"]
+      dockerfile: Dockerfile
+    networks:
+      - cluster
+    environment:
+      - PYTHONUNBUFFERED=1
+      - BN_URL=${BN_URL:-http://localhost:5052}
+      - BP_URL=http://bp:8000
+    entrypoint: ["./background_tasks.py"]
   
   blockgauge:
     image: ghcr.io/blockprint-collective/blockgauge
