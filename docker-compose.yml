@@ -36,9 +36,24 @@ services:
   blockgauge:
     image: ghcr.io/blockprint-collective/blockgauge
     command: >-
+      blockgauge
       --lighthouse-url ${BN_URL:-localhost:5052} 
-      --blockprint-url ${BP_URL:-bp-bg:8000} 
-    network_mode: 'host'    
+      --blockprint-url ${BP_URL:-bp:8000}    
+    networks:
+      - cluster
+  
+  caddy:
+    image: caddy:2.7.5
+    ports:
+    - "80:80"
+    - "443:443"
+    volumes:
+    - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    - ./data/caddy/data:/data
+    - ./data/caddy/config:/config
+    restart: unless-stopped
+    networks:
+      - cluster
 
                 
 
