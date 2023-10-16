@@ -8,30 +8,30 @@ services:
     build:
       context: .
       dockerfile: bp.Dockerfile
-    ports: 
-      - "127.0.0.1:8000:8000"
+    environment:
+      - MODEL_PATH=/app/model/model.pkl
+      - BN_URL=${BP_URL:-localhost:5052}
+      - GUNICORN_CMD_ARGS="--bind=0.0.0.0"
     volumes:
-      - ${DATA_DIR}:/app/data/mainnet/training
-    networks:
-      - cluster
-    entrypoint: ["python3.9", "api_server.py"]
+      - ${DATA_DIR:-./training_data}:/app/data/mainnet/training
+      - ${MODEL_PATH:-./model.pkl}:/app/model/model.pkl
+      - ./block_db.sqlite:/app/block_db.sqlite
+    network_mode: 'host'
+    entrypoint: ["gunicorn", "--timeout", "1800", "api_server:app"]
                 
   bp-bg:
     build:
       context: .
       dockerfile: bp-bg.Dockerfile
-    ports: 
-      - "127.0.0.1:8000:8000"
-    networks:
-      - cluster
+    network_mode: 'host'
+    entrypoint: ["python3.9", "background_tasks.py"]
   
   blockgauge:
     image: ghcr.io/blockprint-collective/blockgauge
     command: >-
       --lighthouse-url ${BN_URL:-localhost:5052} 
       --blockprint-url ${BP_URL:-bp-bg:8000} 
-    networks:
-      - cluster      
+    network_mode: 'host'    
 
                 
 
