@@ -10,7 +10,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - MODEL_PATH=/app/model/model.pkl
-      - BN_URL=${BP_URL:-localhost:5052}
+      - BN_URL=${BN_URL:-localhost:5052}
       - GUNICORN_CMD_ARGS="--bind=0.0.0.0"
       - PYTHONUNBUFFERED=1
     volumes:
@@ -38,7 +38,7 @@ services:
     command: >-
       blockgauge
       --lighthouse-url ${BN_URL:-localhost:5052} 
-      --blockprint-url ${BP_URL:-bp:8000}    
+      --blockprint-url http://bp:8000    
     networks:
       - cluster
   
