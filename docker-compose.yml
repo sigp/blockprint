@@ -38,7 +38,8 @@ services:
     command: >-
       blockgauge
       --lighthouse-url ${BN_URL:-localhost:5052} 
-      --blockprint-url http://bp:8000    
+      --blockprint-url http://bp:8000
+      --listen-address 0.0.0.0  
     networks:
       - cluster
   
