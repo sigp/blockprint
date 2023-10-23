@@ -1,0 +1,15 @@
+network = "mainnet"
+canonical_bn = "http://localhost:5052"
+
+[[post_endpoints]]
+name = "sigp"
+url = "https://username:password@api.blockprint.sigp.io/gauge/classify"
+extra_data = true
+compare_rewards = true
+results_dir = "/mnt/dreamer/block_rewards"
+
+[[nodes]]
+name = "lighthouse-subscribe-all"
+label = "Lighthouse"
+url = "http://localhost:5052"
+skip_randao_verification = true
