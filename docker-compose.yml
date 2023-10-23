@@ -46,8 +46,7 @@ services:
     image: ghcr.io/blockprint-collective/blockdreamer
     volumes:
       - ./dreamer:/mnt/dreamer
-    workdir:
-      - /mnt/dreamer
+    working_dir: "/mnt/dreamer"
     command: >-
       blockdreamer 
       --config /mnt/dreamer/config.toml
