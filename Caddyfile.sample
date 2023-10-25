@@ -1,0 +1,88 @@
+# Access to everything.
+(authorised-super-users) {
+}
+
+# Access to blockprint's private API and nothing else.
+(authorised-blockprint-users) {
+}
+
+# Access to the gauge /classify method, but not blockprint's private API.
+(authorised-blockprint-workers) {
+}
+
+http:// {
+	log {
+		output stderr
+		format filter {
+			wrap console
+			fields {
+				request>headers>Authorization delete
+			}
+		}
+	}
+
+	encode gzip zstd
+
+	@public {
+		path /blocks_per_client/*
+		path /sync/status
+		path /sync/gaps
+	}
+
+	@private {
+		path /validator/*
+		path /blocks/*
+		path /confusion/*
+	}
+
+	@gauge-classify {
+		path /gauge/classify
+	}
+
+	@gauge-accuracy {
+		path /confusion
+		path /accuracy
+		path /gauge/accuracy
+		path /gauge/confusion
+	}
+
+	@eleel {
+		path /eleel
+		path /eleel/
+	}
+	@eleel-canonical {
+		path /eleel/canonical
+	}
+
+	reverse_proxy @public bp:8000
+	reverse_proxy @private bp:8000
+
+	reverse_proxy @gauge-accuracy blockgauge:8002 {
+		rewrite /accuracy
+	}
+
+	reverse_proxy @gauge-classify blockgauge:8002 {
+		rewrite /classify
+	}
+
+	reverse_proxy @eleel localhost:8552 {
+		rewrite /
+	}
+	respond @eleel-canonical 400 {
+		body "{\"error\": \"nice try\"}"
+		close
+	}
+
+	handle_errors {
+		respond "{\"error\": \"{http.error.status_code} {http.error.status_text}\"}"
+	}
+
+	basicauth @private {
+		import authorised-super-users
+		import authorised-blockprint-users
+	}
+	basicauth @gauge-classify {
+		import authorised-super-users
+		import authorised-blockprint-workers
+	}
+}
