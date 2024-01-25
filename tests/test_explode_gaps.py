@@ -6,13 +6,11 @@ def check_gaps(start_slot, end_slot, sprp):
 
     assert len(result) > 0
 
-    prev_start = None
     prev_end = None
     for start, end in result:
         assert start < end
         assert start == start_slot or (start == prev_end + 1 and start % sprp == 1)
         assert end == end_slot or (end < end_slot and end % sprp == 0)
-        prev_start = start
         prev_end = end
 
 
