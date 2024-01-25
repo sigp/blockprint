@@ -48,12 +48,16 @@ class BlockRewardListener:
 def explode_gap(start_slot, end_slot, sprp):
     next_boundary = (start_slot // sprp + 1) * sprp
 
-    if end_slot > next_boundary:
-        return [(start_slot, next_boundary)] + explode_gap(
-            next_boundary + 1, end_slot, sprp
-        )
-    else:
+    if end_slot <= next_boundary:
         return [(start_slot, end_slot)]
+
+    gaps = []
+    while end_slot > next_boundary:
+        gaps.append((start_slot, next_boundary))
+        start_slot = next_boundary + 1
+        next_boundary += sprp
+
+    return gaps
 
 
 def explode_gaps(gaps, sprp=2048):
