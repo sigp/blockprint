@@ -36,11 +36,16 @@ pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 
-### k-NN Classifier
+### The Classifier
 
-Blockprint's classifier is a k-nearest neighbours classifier in `knn_classifier.py`.
+Blockprint's classifier utilizes one of two machine learning algorithms:
 
-See `./knn_classifier.py --help` for command line options including cross
+- K-nearest neighbours
+- Multi-layer Perceptron
+
+These can be chosen with the `--classifier-type` flag in `classifier.py`.
+
+See `./classifier.py --help` for more command line options including cross
 validation (CV) and manual classification.
 
 ### Training the Classifier
@@ -81,10 +86,10 @@ testdata_proc
     └── 0x7fedb0da9699c93ce66966555c6719e1159ae7b3220c7053a08c8f50e2f3f56f.json
 ```
 
-You can then use this directory as the datadir argument to `./knn_classifier.py`:
+You can then use this directory as the datadir argument to `./classifier.py`:
 
 ```
-./knn_classifier.py testdata_proc --classify testdata
+./classifier.py testdata_proc --classify testdata
 ```
 
 If you then want to use the classifier to build an sqlite database:
