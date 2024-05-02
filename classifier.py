@@ -9,12 +9,16 @@ import matplotlib.pyplot as plt
 import pickle
 
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_validate
 from feature_selection import *  # noqa F403
 from feature_selection import ALL_FEATURES
 from prepare_training_data import CLIENTS, classify_reward_by_graffiti
 
 K = 9
+
+MLP_HIDDEN_LAYER_SIZES=(390, 870)
+
 WEIGHTS = "distance"
 
 MIN_GUESS_THRESHOLD = 0.20
@@ -69,7 +73,8 @@ class Classifier:
         graffiti_only_clients=DEFAULT_GRAFFITI_ONLY,
         features=DEFAULT_FEATURES,
         enable_cv=False,
-        classifier_type='knn'
+        classifier_type='knn',
+        hidden_layer_sizes=MLP_HIDDEN_LAYER_SIZES 
     ):
         graffiti_only_clients = set(graffiti_only_clients)
 
@@ -123,7 +128,13 @@ class Classifier:
 
         feature_matrix = np.array(feature_matrix)
 
-        classifier = KNeighborsClassifier(n_neighbors=K, weights=WEIGHTS)
+        if classifier_type == 'knn':
+            classifier = KNeighborsClassifier(n_neighbors=K, weights=WEIGHTS)
+        elif classifier_type == 'mlp':
+            classifier = MLPClassifier(
+                hidden_layer_sizes=hidden_layer_sizes, max_iter=1000
+            )
+        # Assert above makes sure that classifier_type is one of the valid types 
 
         if enable_cv:
             self.scores = cross_validate(
