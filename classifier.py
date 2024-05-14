@@ -17,7 +17,7 @@ from prepare_training_data import CLIENTS, classify_reward_by_graffiti
 
 K = 9
 
-MLP_HIDDEN_LAYER_SIZES=(390, 870)
+MLP_HIDDEN_LAYER_SIZES = (390, 870)
 
 WEIGHTS = "distance"
 
@@ -73,8 +73,8 @@ class Classifier:
         graffiti_only_clients=DEFAULT_GRAFFITI_ONLY,
         features=DEFAULT_FEATURES,
         enable_cv=False,
-        classifier_type='knn',
-        hidden_layer_sizes=MLP_HIDDEN_LAYER_SIZES 
+        classifier_type="knn",
+        hidden_layer_sizes=MLP_HIDDEN_LAYER_SIZES,
     ):
         graffiti_only_clients = set(graffiti_only_clients)
 
@@ -88,9 +88,7 @@ class Classifier:
             set(grouped_clients) & graffiti_only_clients == set()
         ), "clients must not be both graffiti-only and grouped"
 
-        assert (
-            classifier_type in ["knn", "mlp"]
-        ), "classifier_type must be knn or mlp"
+        assert classifier_type in ["knn", "mlp"], "classifier_type must be knn or mlp"
 
         feature_matrix = []
         training_labels = []
@@ -128,13 +126,13 @@ class Classifier:
 
         feature_matrix = np.array(feature_matrix)
 
-        if classifier_type == 'knn':
+        if classifier_type == "knn":
             classifier = KNeighborsClassifier(n_neighbors=K, weights=WEIGHTS)
-        elif classifier_type == 'mlp':
+        elif classifier_type == "mlp":
             classifier = MLPClassifier(
                 hidden_layer_sizes=hidden_layer_sizes, max_iter=1000
             )
-        # Assert above makes sure that classifier_type is one of the valid types 
+        # Assert above makes sure that classifier_type is one of the valid types
 
         if enable_cv:
             self.scores = cross_validate(
@@ -252,7 +250,10 @@ def parse_args():
         "--group", default=[], nargs="+", help="clients to group during classification"
     )
     parser.add_argument(
-        "--classifier-type", default="knn", choices=["knn", "mlp"], help="the type of classifier to use"
+        "--classifier-type",
+        default="knn",
+        choices=["knn", "mlp"],
+        help="the type of classifier to use",
     )
     parser.add_argument(
         "--persist",
@@ -329,7 +330,7 @@ def main():
                     graffiti_only_clients=graffiti_only,
                     features=feature_vec,
                     enable_cv=True,
-                    classifier_type=classifier_type
+                    classifier_type=classifier_type,
                 )
                 print(f"enabled clients: {classifier.enabled_clients}")
                 print(f"classifier scores: {classifier.scores['test_score']}")
@@ -347,8 +348,9 @@ def main():
     assert classify_dir is not None, "classify dir required"
     print(f"classifying all data in directory {classify_dir}")
     print(f"grouped clients: {grouped_clients}")
-    classifier = Classifier(data_dir, grouped_clients=grouped_clients,
-                    classifier_type=classifier_type)
+    classifier = Classifier(
+        data_dir, grouped_clients=grouped_clients, classifier_type=classifier_type
+    )
 
     if args.plot is not None:
         classifier.plot_feature_matrix(args.plot)
