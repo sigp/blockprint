@@ -5,7 +5,7 @@ import csv
 import sqlite3
 import requests
 import statistics
-from knn_classifier import compute_best_guess
+from classifier import compute_best_guess
 from prepare_training_data import CLIENTS
 from build_db import block_row_to_obj
 

@@ -75,13 +75,13 @@ def process_file(
 
 
 def parse_args():
-    parser = argparse.ArgumentParser("create training data for the KNN classifier")
+    parser = argparse.ArgumentParser("create training data for the classifier")
 
     parser.add_argument(
         "raw_data_dir", help="input containing data to classify using graffiti"
     )
     parser.add_argument(
-        "proc_data_dir", help="output for processed data, suitable for KNN training"
+        "proc_data_dir", help="output for processed data, suitable for training"
     )
     parser.add_argument(
         "--disable",

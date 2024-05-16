@@ -4,7 +4,7 @@ import os
 import json
 import sqlite3
 import argparse
-from knn_classifier import Classifier
+from classifier import Classifier
 from multi_classifier import MultiClassifier
 from prepare_training_data import CLIENTS
 
@@ -370,7 +370,7 @@ def main():
     if args.multi_classifier:
         classifier = MultiClassifier(data_dir)
     else:
-        print("loading single KNN classifier")
+        print("loading single classifier")
         classifier = Classifier(data_dir)
         print("loaded")
 

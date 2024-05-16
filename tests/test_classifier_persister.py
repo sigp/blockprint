@@ -2,7 +2,7 @@ import pickle
 import json
 import os
 from typing import Any, Dict, List
-from knn_classifier import Classifier, persist_classifier
+from classifier import Classifier, persist_classifier
 from prepare_training_data import CLIENTS
 
 

@@ -9,12 +9,16 @@ import matplotlib.pyplot as plt
 import pickle
 
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_validate
 from feature_selection import *  # noqa F403
 from feature_selection import ALL_FEATURES
 from prepare_training_data import CLIENTS, classify_reward_by_graffiti
 
 K = 9
+
+MLP_HIDDEN_LAYER_SIZES = (390, 870)
+
 WEIGHTS = "distance"
 
 MIN_GUESS_THRESHOLD = 0.20
@@ -69,6 +73,8 @@ class Classifier:
         graffiti_only_clients=DEFAULT_GRAFFITI_ONLY,
         features=DEFAULT_FEATURES,
         enable_cv=False,
+        classifier_type="knn",
+        hidden_layer_sizes=MLP_HIDDEN_LAYER_SIZES,
     ):
         graffiti_only_clients = set(graffiti_only_clients)
 
@@ -81,6 +87,8 @@ class Classifier:
         assert (
             set(grouped_clients) & graffiti_only_clients == set()
         ), "clients must not be both graffiti-only and grouped"
+
+        assert classifier_type in ["knn", "mlp"], "classifier_type must be knn or mlp"
 
         feature_matrix = []
         training_labels = []
@@ -118,18 +126,24 @@ class Classifier:
 
         feature_matrix = np.array(feature_matrix)
 
-        knn = KNeighborsClassifier(n_neighbors=K, weights=WEIGHTS)
+        if classifier_type == "knn":
+            classifier = KNeighborsClassifier(n_neighbors=K, weights=WEIGHTS)
+        elif classifier_type == "mlp":
+            classifier = MLPClassifier(
+                hidden_layer_sizes=hidden_layer_sizes, max_iter=1000
+            )
+        # Assert above makes sure that classifier_type is one of the valid types
 
         if enable_cv:
             self.scores = cross_validate(
-                knn, feature_matrix, training_labels, scoring="balanced_accuracy"
+                classifier, feature_matrix, training_labels, scoring="balanced_accuracy"
             )
         else:
             self.scores = None
 
-        knn.fit(feature_matrix, training_labels)
+        classifier.fit(feature_matrix, training_labels)
 
-        self.knn = knn
+        self.classifier = classifier
         self.enabled_clients = enabled_clients
         self.graffiti_only_clients = set(graffiti_only_clients)
         self.features = features
@@ -145,7 +159,7 @@ class Classifier:
             return (graffiti_guess, graffiti_guess, prob_by_client, graffiti_guess)
 
         row = into_feature_row(block_reward, self.features)
-        res = self.knn.predict_proba([row])
+        res = self.classifier.predict_proba([row])
 
         prob_by_client = {
             client: res[0][i] for i, client in enumerate(self.enabled_clients)
@@ -219,7 +233,7 @@ def compute_best_guess(probability_map) -> str:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser("KNN testing and cross validation")
+    parser = argparse.ArgumentParser("Classifier testing and cross validation")
 
     parser.add_argument("data_dir", help="training data directory")
     parser.add_argument("--classify", help="data to classify")
@@ -234,6 +248,12 @@ def parse_args():
     )
     parser.add_argument(
         "--group", default=[], nargs="+", help="clients to group during classification"
+    )
+    parser.add_argument(
+        "--classifier-type",
+        default="knn",
+        choices=["knn", "mlp"],
+        help="the type of classifier to use",
     )
     parser.add_argument(
         "--persist",
@@ -280,7 +300,7 @@ def main():
     grouped_clients = args.group
     should_persist = args.should_persist
     graffiti_only = args.graffiti_only
-
+    classifier_type = args.classifier_type
     disabled_clients = args.disable
     enabled_clients = [
         client
@@ -310,6 +330,7 @@ def main():
                     graffiti_only_clients=graffiti_only,
                     features=feature_vec,
                     enable_cv=True,
+                    classifier_type=classifier_type,
                 )
                 print(f"enabled clients: {classifier.enabled_clients}")
                 print(f"classifier scores: {classifier.scores['test_score']}")
@@ -327,7 +348,9 @@ def main():
     assert classify_dir is not None, "classify dir required"
     print(f"classifying all data in directory {classify_dir}")
     print(f"grouped clients: {grouped_clients}")
-    classifier = Classifier(data_dir, grouped_clients=grouped_clients)
+    classifier = Classifier(
+        data_dir, grouped_clients=grouped_clients, classifier_type=classifier_type
+    )
 
     if args.plot is not None:
         classifier.plot_feature_matrix(args.plot)
@@ -354,7 +377,7 @@ def main():
     print(f"total blocks processed: {total_blocks}")
 
     if should_persist:
-        persist_classifier(classifier, "knn_classifier")
+        persist_classifier(classifier, "classifier")
 
     for multilabel, num_blocks in sorted(frequency_map.items()):
         percentage = round(num_blocks / total_blocks, 4)
