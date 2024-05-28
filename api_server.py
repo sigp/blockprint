@@ -1,7 +1,6 @@
 import os
 import json
 import falcon
-import pickle
 
 from multi_classifier import MultiClassifier
 from build_db import (
@@ -18,7 +17,7 @@ from build_db import (
     count_false_positives,
     count_false_negatives,
 )
-from classifier import import_classifier, Classifier # We need this one for the persisted model
+from classifier import * # We need this one for the persisted model
 
 
 DATA_DIR = "./data/mainnet/training"
