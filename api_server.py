@@ -1,7 +1,6 @@
 import os
 import json
 import falcon
-
 from multi_classifier import MultiClassifier
 from build_db import (
     open_block_db,
@@ -17,7 +16,13 @@ from build_db import (
     count_false_positives,
     count_false_negatives,
 )
-from classifier import * # We need this one for the persisted model
+import __main__
+from classifier import (
+    Classifier,
+    import_classifier,
+)
+
+__main__.Classifier = Classifier
 
 
 DATA_DIR = "./data/mainnet/training"
@@ -25,7 +30,8 @@ BLOCK_DB = os.environ.get("BLOCK_DB") or "./block_db.sqlite"
 BN_URL = "http://localhost:5052"
 SELF_URL = "http://localhost:8000"
 DISABLE_CLASSIFIER = "DISABLE_CLASSIFIER" in os.environ
-MODEL_PATH=os.environ.get("MODEL_PATH") or ""
+MODEL_PATH = os.environ.get("MODEL_PATH") or ""
+
 
 class Classify:
     def __init__(self, classifier, block_db):
@@ -205,13 +211,13 @@ app = application = falcon.App()
 classifier = None
 if not DISABLE_CLASSIFIER:
     if MODEL_PATH != "":
-        if MODEL_PATH.endswith('.pkl'):
+        if MODEL_PATH.endswith(".pkl"):
             classifier = import_classifier(MODEL_PATH)
-            
+
         else:
             print("model path must end with .pkl")
             exit(0)
-            
+
     else:
         print("Initialising classifier, this could take a moment...")
         classifier = MultiClassifier(DATA_DIR) if not DISABLE_CLASSIFIER else None
