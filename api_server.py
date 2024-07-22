@@ -223,7 +223,7 @@ if not DISABLE_CLASSIFIER:
         classifier = MultiClassifier(DATA_DIR) if not DISABLE_CLASSIFIER else None
         print("Done")
 
-if classifier == None:
+if classifier is None:
     print("The classifier was not loaded")
     exit(0)
 
