@@ -290,6 +290,18 @@ def persist_classifier(classifier: Classifier, name: str) -> None:
         print(f"Failed to persist classifier due to {e}")
 
 
+def import_classifier(model_path: str) -> Classifier:
+    print(f"""Loading classifier from {model_path}""")
+
+    try:
+        classifier = pickle.load(open(model_path, "rb"))
+        print("Loaded classifier into memory")
+        return classifier
+
+    except Exception as e:
+        print(f"Failed to import classifier due to {e}")
+
+
 def main():
     args = parse_args()
     data_dir = args.data_dir
