@@ -212,20 +212,20 @@ classifier = None
 if not DISABLE_CLASSIFIER:
     if MODEL_PATH != "":
         if MODEL_PATH.endswith(".pkl"):
-            classifier = import_classifier(MODEL_PATH)
+            try:
+                classifier = import_classifier(MODEL_PATH)
+            except Exception as e:
+                print(f"Failed to persist classifier due to {e}")
+                exit(1)
 
         else:
             print("model path must end with .pkl")
-            exit(0)
+            exit(1)
 
     else:
         print("Initialising classifier, this could take a moment...")
         classifier = MultiClassifier(DATA_DIR) if not DISABLE_CLASSIFIER else None
         print("Done")
-
-if classifier is None:
-    print("The classifier was not loaded")
-    exit(0)
 
 block_db = open_block_db(BLOCK_DB)
 
