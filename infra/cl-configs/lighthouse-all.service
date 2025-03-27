@@ -1,0 +1,31 @@
+[Unit]
+Description=Lighthouse BN
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=sigp
+Group=sigp
+Type=simple
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/sigp
+ExecStart=docker run --network host --mount "type=bind,src=/storage/lighthouse/all,dst=/mnt/lighthouse" \
+	sigp/lighthouse:latest-unstable lighthouse bn \
+	--datadir /mnt/lighthouse \
+	--port 9000 \
+	--http-port 7001 \
+	--http \
+	--disable-quic \
+	--checkpoint-sync-url "https://mainnet.checkpoint.sigp.io" \
+	--execution-endpoint "https://api.blockprint.sigp.io/eleel" \
+	--execution-jwt "/mnt/lighthouse/jwt.hex" \
+	--execution-jwt-id "bpw1" \
+	--suggested-fee-recipient=0xffffffffffffffffffffffffffffffffffffffff \
+	--subscribe-all-subnets \
+	--import-all-attestations \
+	--always-prepare-payload \
+	--prepare-payload-lookahead 8000
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,23 @@
+[Unit]
+Description=Lodestar (subscribe none)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+Type=simple
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/ubuntu
+ExecStart=docker run --network host --mount "type=bind,src=/storage/lodestar/none,dst=/mnt/lodestar" \
+	chainsafe/lodestar:v1.13.0-rc.0 \
+	beacon \
+	--dataDir "/mnt/lodestar" \
+	--execution.urls "https://api.blockprint.sigp.io/eleel" \
+	--jwt-secret "/mnt/lodestar/jwt.hex" \
+	--jwtId "bpw3" \
+	--checkpointSyncUrl "https://mainnet.checkpoint.sigp.io" \
+	--suggestedFeeRecipient 0xffffffffffffffffffffffffffffffffffffffff \
+	--port 9010 \
+	--rest.port 7010

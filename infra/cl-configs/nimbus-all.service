@@ -1,0 +1,27 @@
+[Unit]
+Description=Nimbus Beacon Node
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=sigp
+Group=sigp
+Type=simple
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/sigp
+ExecStart=docker run --network host --mount "type=bind,src=/storage/nimbus/all,dst=/mnt/nimbus" \
+	statusim/nimbus-eth2:amd64-latest \
+	--data-dir=/mnt/nimbus \
+	--tcp-port=9001 \
+	--udp-port=9001 \
+	--rest-port=7000 \
+	--rest=true \
+	--web3-url="https://api.blockprint.sigp.io/eleel" \
+	--jwt-secret="/mnt/nimbus/jwt.hex" \
+	--suggested-fee-recipient=0xffffffffffffffffffffffffffffffffffffffff \
+	--history=prune \
+	--subscribe-all-subnets=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,27 @@
+[Unit]
+Description=Prysm (all subnets)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=blockprint
+Group=blockprint
+Type=simple
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/blockprint
+ExecStart=docker run --network host --mount "type=bind,src=/storage/prysm/all,dst=/mnt/prysm" \
+	gcr.io/prysmaticlabs/prysm/beacon-chain:stable \
+	--accept-terms-of-use \
+	--checkpoint-sync-url="https://mainnet.checkpoint.sigp.io" \
+	--execution-endpoint="https://api.blockprint.sigp.io/eleel" \
+	--jwt-secret="/mnt/prysm/jwt.hex" \
+	--suggested-fee-recipient 0xffffffffffffffffffffffffffffffffffffffff \
+	--p2p-tcp-port=9005 \
+	--p2p-udp-port=9005 \
+	--grpc-gateway-port=7005 \
+	--subscribe-all-subnets \
+	--datadir "/mnt/prysm/data"
+
+[Install]
+WantedBy=multi-user.target

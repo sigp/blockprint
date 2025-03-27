@@ -1,0 +1,33 @@
+[Install]
+WantedBy=multi-user.target
+[Unit]
+Description=Lighthouse BN
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+Type=simple
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/ubuntu
+ExecStartPre=-/usr/bin/docker stop lighthouse-all
+ExecStartPre=-/usr/bin/docker rm lighthouse-all
+ExecStart=docker run --rm --name lighthouse-all --network host --mount "type=bind,src=/storage/lighthouse/all,dst=/mnt/lighthouse" \
+	sigmaprime/lighthouse:michaelsproul-fetch-blobs-earlier-5f563ef \
+	lighthouse bn \
+	--datadir /mnt/lighthouse \
+	--port 9005 \
+	--http-port 7005 \
+	--http \
+	--disable-quic \
+	--metrics \
+	--checkpoint-sync-url "https://mainnet.checkpoint.sigp.io" \
+	--execution-endpoint "http://localhost:8552/canonical" \
+	--execution-jwt "/mnt/lighthouse/jwt.hex" \
+	--suggested-fee-recipient=0xffffffffffffffffffffffffffffffffffffffff \
+	--subscribe-all-subnets \
+	--import-all-attestations \
+	--always-prepare-payload \
+	--prepare-payload-lookahead 8000

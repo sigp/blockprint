@@ -1,0 +1,29 @@
+[Install]
+WantedBy=multi-user.target
+[Unit]
+Description=Teku (subscribe all)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+Type=simple
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/ubuntu
+ExecStart=docker run --network host --mount "type=bind,src=/storage/teku/all,dst=/mnt/teku" \
+	consensys/teku:latest \
+	--data-base-path "/mnt/teku" \
+	--ee-endpoint "http://localhost:8552" \
+	--ee-jwt-secret-file "/mnt/teku/jwt.hex" \
+	--initial-state "https://mainnet.checkpoint.sigp.io/eth/v2/debug/beacon/states/finalized" \
+	--validators-proposer-default-fee-recipient 0xffffffffffffffffffffffffffffffffffffffff \
+	--p2p-port 9000 \
+	--rest-api-enabled true \
+	--rest-api-port 7000 \
+	--log-destination console \
+        --p2p-subscribe-all-subnets-enabled true
+
+[Install]
+WantedBy=multi-user.target

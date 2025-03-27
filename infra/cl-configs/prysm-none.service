@@ -1,0 +1,26 @@
+[Unit]
+Description=Prysm (subscribe none)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+Type=simple
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/ubuntu
+ExecStart=docker run --network host --mount "type=bind,src=/storage/prysm/none,dst=/mnt/prysm" \
+	gcr.io/prysmaticlabs/prysm/beacon-chain:stable \
+	--accept-terms-of-use \
+	--checkpoint-sync-url="https://mainnet.checkpoint.sigp.io" \
+	--execution-endpoint="https://api.blockprint.sigp.io/eleel" \
+	--jwt-secret="/mnt/prysm/jwt.hex" \
+	--suggested-fee-recipient 0xffffffffffffffffffffffffffffffffffffffff \
+	--save-full-execution-payloads \
+	--p2p-tcp-port=9005 \
+	--p2p-udp-port=9005 \
+	--grpc-gateway-port=7005
+
+[Install]
+WantedBy=multi-user.target

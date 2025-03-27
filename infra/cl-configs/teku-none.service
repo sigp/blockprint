@@ -1,0 +1,27 @@
+[Unit]
+Description=Teku (subscribe none)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=sigp
+Group=sigp
+Type=simple
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/sigp
+ExecStart=docker run --network host --mount "type=bind,src=/storage/teku/none,dst=/mnt/teku" \
+	consensys/teku:latest \
+	--data-base-path "/mnt/teku" \
+	--ee-endpoint "https://api.blockprint.sigp.io/eleel" \
+	--ee-jwt-secret-file "/mnt/teku/jwt.hex" \
+	--ee-jwt-claim-id "bpw1" \
+	--initial-state "https://mainnet.checkpoint.sigp.io/eth/v2/debug/beacon/states/finalized" \
+	--validators-proposer-default-fee-recipient 0xffffffffffffffffffffffffffffffffffffffff \
+	--p2p-port 9002 \
+	--rest-api-enabled true \
+	--rest-api-port 7002 \
+	--log-destination console
+
+[Install]
+WantedBy=multi-user.target

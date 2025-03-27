@@ -1,0 +1,28 @@
+[Unit]
+Description=Grandine (subscribe all)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+Type=simple
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/ubuntu
+ExecStartPre=-/usr/bin/docker stop grandine-all
+ExecStartPre=-/usr/bin/docker rm grandine-all
+# ExecStartPre=/usr/bin/docker pull sifrai/grandine:unstable
+ExecStart=docker run --rm --name grandine-all --network host --mount "type=bind,src=/storage/grandine/all,dst=/mnt/grandine" \
+	sifrai/grandine:unstable \
+	--data-dir /mnt/grandine \
+	--libp2p-port 9005 \
+	--discovery-port 9005 \
+	--http-port 7005 \
+	--eth1-rpc-urls "http://localhost:8552/canonical" \
+	--jwt-secret "/mnt/grandine/jwt.hex" \
+        --jwt-id "bpw2" \
+	--suggested-fee-recipient 0xffffffffffffffffffffffffffffffffffffffff \
+	--checkpoint-sync-url "http://localhost:9052" \
+        --subscribe-all-subnets
+        # --force-checkpoint-sync \
