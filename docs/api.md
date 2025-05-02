@@ -14,7 +14,7 @@ These APIs intentionally group data by epoch to avoid identifying individual val
 Get block proposer client affinity for a single epoch.
 
 ```bash
-curl "https://api.blockprint.sigp.io/blocks_per_client/96000
+curl "https://api.blockprint.sigp.io/blocks_per_client/96000"
 ```
 
 ```json
