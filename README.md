@@ -104,6 +104,19 @@ If you then want to use the classifier to build an sqlite database:
 ```
 gunicorn api_server:app --timeout 1800
 ```
+### Running with Docker
+
+Build the Docker image:
+```
+docker build -t blockprint .
+```
+
+Run the container (mapping port 8000 to host):
+```
+docker run -p 8000:8000 blockprint
+```
+
+The API will be available at http://localhost:8000
 
 It will take a few minutes to start-up while it loads all of the training data into memory.
 
