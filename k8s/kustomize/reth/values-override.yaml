@@ -1,0 +1,47 @@
+# Reth configuration values
+image:
+  repository: ethpandaops/reth
+  tag: main
+  pullPolicy: IfNotPresent
+
+persistence:
+  enabled: true
+  size: 100Gi
+  storageClassName: null
+  accessModes: [ReadWriteOnce]
+
+# Network ports
+p2pPort: 30303
+httpPort: 8545
+wsPort: 8546
+authPort: 8551
+metricsPort: 9001
+
+# Security
+jwt: "ecb22bc24e7d4061f7ed690ccd5846d7d73f5d2b9733267e12f56790398d908a"
+containerSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  readOnlyRootFilesystem: true
+
+# Resources
+resources:
+  limits:
+    cpu: "4"
+    memory: "16Gi"
+  requests:
+    cpu: "2"
+    memory: "8Gi"
+
+# Mainnet configuration
+extraArgs:
+  - --chain=mainnet
+  - --network.max-peers=100
+  - --rpc.http
+  - --rpc.ws
+  - --rpc.auth
+
+# Monitoring
+serviceMonitor:
+  enabled: false
+  path: "/debug/metrics/prometheus"

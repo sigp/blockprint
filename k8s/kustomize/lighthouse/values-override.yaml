@@ -1,0 +1,47 @@
+# Lighthouse configuration values
+image:
+  repository: sigp/lighthouse
+  tag: latest
+  pullPolicy: IfNotPresent
+
+mode: beacon
+
+persistence:
+  enabled: true
+  size: 100Gi
+  storageClassName: null
+  accessModes: [ReadWriteOnce]
+
+# Network ports
+p2pPort: 9000
+httpPort: 5052
+metricsPort: 5054
+
+# Security
+jwt: "ecb22bc24e7d4061f7ed690ccd5846d7d73f5d2b9733267e12f56790398d908a"
+containerSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  readOnlyRootFilesystem: true
+
+# Resources
+resources:
+  limits:
+    cpu: "4"
+    memory: "16Gi"
+  requests:
+    cpu: "2"
+    memory: "8Gi"
+
+# Mainnet configuration
+extraArgs:
+  - --network=mainnet
+  - --execution-endpoint=http://execution-client:8551
+  - --execution-jwt=/jwt.hex
+  - --checkpoint-sync-url=https://beaconstate.info
+  - --http-allow-origin=*
+
+# Monitoring
+serviceMonitor:
+  enabled: false
+  path: "/metrics"
