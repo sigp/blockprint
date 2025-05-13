@@ -1,0 +1,29 @@
+# Nethermind configuration values
+image:
+  repository: nethermind/nethermind
+  tag: latest
+
+persistence:
+  enabled: true
+  size: 20Gi
+
+p2pPort: 30303
+httpPort: 8545
+wsPort: 8546
+authPort: 8551
+metricsPort: 9545
+jwt: "ecb22bc24e7d4061f7ed690ccd5846d7d73f5d2b9733267e12f56790398d908a"
+
+# Additional customizations
+replicas: 1
+resources:
+  limits:
+    cpu: "2"
+    memory: "8Gi"
+  requests:
+    cpu: "1"
+    memory: "4Gi"
+
+extraArgs:
+  - --config=mainnet
+  - --Network.MaxActivePeers=100
