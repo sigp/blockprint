@@ -20,7 +20,7 @@ REGEX_PATTERNS = {
     "Teku": [r".*[Tt]eku", r"RP-[A-Z]?T v[0-9]*\.[0-9]*\.[0-9]*.*"],
     "Nimbus": [r".*[Nn]imbus", r"RP-[A-Z]?N v[0-9]*\.[0-9]*\.[0-9]*.*"],
     "Prysm": [r".*[Pp]rysm", "prylabs", r"RP-[A-Z]?P v[0-9]*\.[0-9]*\.[0-9]*.*"],
-    "Lodestar": [r".*[Ll]odestar", r"[A-Z]{2}[a-z0-9]{4}LS[a-z0-9]{4}"],
+    "Lodestar": [r".*[Ll]odestar"],
 }
 
 REGEX = {
