@@ -134,6 +134,17 @@ def feat_median_density(block_reward):
     return safe_median(densities)
 
 
+def feat_median_density_electra(block_reward):
+    per_attestation_rewards = block_reward["attestation_rewards"][
+        "per_attestation_rewards"
+    ]
+    densities = [
+        len(rewards) / (32 * TARGET_COMMITTEE_SIZE)
+        for rewards in per_attestation_rewards
+    ]
+    return safe_median(densities)
+
+
 def feat_mean_density(block_reward):
     per_attestation_rewards = block_reward["attestation_rewards"][
         "per_attestation_rewards"
@@ -211,6 +222,7 @@ ALL_FEATURES = {
     "norm_reward_per_slot": scale_by_num_slots(feat_total_reward_norm),
     "reward_per_attestation": scale_by_num_attestations(feat_total_reward),
     "median_density": feat_median_density,
+    "median_density_electra": feat_median_density_electra,
     "mean_density": feat_mean_density,
     "num_single_bit": feat_num_single_bit,
     "percent_single_bit": scale_by_num_attestations(feat_num_single_bit),

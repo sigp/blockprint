@@ -15,7 +15,7 @@ from load_blocks import store_block_rewards
 CLIENTS = ["Grandine", "Lighthouse", "Lodestar", "Nimbus", "Other", "Prysm", "Teku"]
 
 REGEX_PATTERNS = {
-    "Grandine": [],
+    "Grandine": [r".*[Gg]randine.*"],
     "Lighthouse": [r".*[Ll]ighthouse", r"RP-[A-Z]?L v[0-9]*\.[0-9]*\.[0-9]*.*"],
     "Teku": [r".*[Tt]eku", r"RP-[A-Z]?T v[0-9]*\.[0-9]*\.[0-9]*.*"],
     "Nimbus": [r".*[Nn]imbus", r"RP-[A-Z]?N v[0-9]*\.[0-9]*\.[0-9]*.*"],
@@ -62,6 +62,7 @@ def process_file(
     raw_data_dir: str, proc_data_dir: str, disabled_clients: list[str], file_name: str
 ) -> None:
     with open(os.path.join(raw_data_dir, file_name), "r") as f:
+        print(f"Processing {file_name}")
         rewards = json.load(f)
 
     res = classify_rewards_by_graffiti(rewards, disabled_clients=disabled_clients)

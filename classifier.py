@@ -7,6 +7,7 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+import plotly.graph_objects as go
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
@@ -26,12 +27,12 @@ CONFIDENCE_THRESHOLD = 0.95
 
 DEFAULT_FEATURES = [
     "percent_redundant_boost",
-    "difflib_rewards",
     "difflib_slot",
-    "difflib_slot_rev",
+    "spearman_correlation",
+    "norm_reward",
 ]
 
-DEFAULT_GRAFFITI_ONLY = ["Lodestar"]
+DEFAULT_GRAFFITI_ONLY = ["Grandine", "Lodestar"]  # too hard rn
 
 VIABLE_FEATURES = [
     "percent_redundant_boost",
@@ -183,7 +184,7 @@ class Classifier:
         z = self.feature_matrix[:, 2]
 
         scatter = ax.scatter(
-            x, y, z, c=self.training_labels, marker=".", alpha=0.25, cmap="Set1"
+            x, y, z, c=self.training_labels, marker=".", alpha=0.25, cmap="Dark2"
         )
 
         handles, _ = scatter.legend_elements()
@@ -203,6 +204,45 @@ class Classifier:
             fig.show()
         else:
             fig.savefig(output_path)
+
+    def plot_feature_matrix_interactive(self, output_path):
+        int_to_client_name = {i: client for (i, client) in enumerate(CLIENTS)}
+        text = [int_to_client_name[i] for i in self.training_labels]
+
+        fig = go.Figure(
+            data=go.Scatter3d(
+                x=self.feature_matrix[:, 0],
+                y=self.feature_matrix[:, 1],
+                z=self.feature_matrix[:, 2],
+                mode="markers",
+                marker=dict(
+                    size=5,
+                    color=self.training_labels,
+                    colorscale="ylgnbu",
+                    opacity=0.8,
+                    colorbar=dict(labelalias=int_to_client_name),
+                ),
+                text=text,  # hover text
+                hovertemplate="%{text}<br>"
+                + f"{self.features[0]}: %{{x}}<br>"
+                + f"{self.features[1]}: %{{y}}<br>"
+                + f"{self.features[2]}: %{{z}}<extra></extra>",
+            )
+        )
+
+        fig.update_layout(
+            scene=dict(
+                xaxis_title=self.features[0],
+                yaxis_title=self.features[1],
+                zaxis_title=self.features[2],
+            ),
+            title="3D Feature Matrix",
+        )
+
+        if output_path is None:
+            fig.show()
+        else:
+            fig.write_html(output_path)  # Creates interactive HTML file
 
 
 def compute_guess_list(probability_map, enabled_clients) -> list:
@@ -364,7 +404,7 @@ def main():
     )
 
     if args.plot is not None:
-        classifier.plot_feature_matrix(args.plot)
+        classifier.plot_feature_matrix_interactive(args.plot)
         print("plot of training data written to {}".format(args.plot))
 
     frequency_map = {}
