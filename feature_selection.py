@@ -103,6 +103,32 @@ def feat_spearman_correlation(block_reward):
         ).correlation
 
 
+def feat_spearman_correlation_lodestar(block_reward):
+    """Spearman correlation coefficient for the per attestation rewards vs their sorted version
+
+    This variant sorts by total_rewards / inclusion distance, which is what Lodestar uses.
+    """
+    per_attestation_rewards = block_reward["attestation_rewards"][
+        "per_attestation_rewards"
+    ]
+    slot = int(block_reward["meta"]["slot"])
+    attestation_data = block_reward["attestation_rewards"].get("attestations") or []
+    inclusion_distances = [int(att["slot"]) - slot for att in attestation_data]
+    attestation_totals = [
+        sum(rewards.values()) / inclusion_distances[i]
+        for i, rewards in enumerate(per_attestation_rewards)
+    ]
+    sorted_attestation_totals = sorted(attestation_totals)
+    # Spearman coefficient isn't defined for uniform/constant sequences, so we just default
+    # that to 1.0
+    if attestation_totals == sorted_attestation_totals:
+        return 1.0
+    else:
+        return scipy.stats.spearmanr(
+            attestation_totals, sorted_attestation_totals
+        ).correlation
+
+
 def feat_total_reward(block_reward):
     total_reward = block_reward["attestation_rewards"]["total"]
     return total_reward
@@ -217,6 +243,7 @@ ALL_FEATURES = {
         lambda x: (x[0], x[3]), reverse=True
     ),
     "spearman_correlation": feat_spearman_correlation,
+    "spearman_correlation_lodestar": feat_spearman_correlation_lodestar,
     "reward": feat_total_reward,
     "norm_reward": feat_total_reward_norm,
     "norm_reward_per_slot": scale_by_num_slots(feat_total_reward_norm),
