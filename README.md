@@ -1,3 +1,5 @@
+# DEPRECATED: blockprint is no longer accurate post-Electra and this repository is considered defunct
+
 # `blockprint`
 
 Blockprint is a tool for measuring client diversity on the Ethereum beacon chain.
